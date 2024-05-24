@@ -14,6 +14,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
+#
+#  [This file was auto-generated]
+#
+#
 ---
 apiVersion: scheduling.k8s.io/v1
 description: This priority class should be used for core kubevirt components only.

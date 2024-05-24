@@ -27,6 +27,7 @@ kubevirt:
       virtLauncherImage: quay.io/kubevirt/virt-launcher:v1.1.0
       virtHandlerImage: quay.io/kubevirt/virt-handler:v1.1.0
       virtApiImage: quay.io/kubevirt/virt-api:v1.1.0
+  version: "v1.1.0"
   imagePullSecrets: default-registry-key
   resources:
     requests:
