@@ -80,7 +80,7 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
                    {"metadata": {"annotations": {"meta.helm.sh/release-name":
                     app_constants.HELM_APP_KUBEVIRT}}},
                    {"metadata": {"annotations": {"meta.helm.sh/release-namespace":
-                    app_constants.HELM_RELEASE_NS}}}]
+                    app_constants.HELM_NS_KUBEVIRT}}}]
 
         for patch in patches:
             client_v1.patch_namespace(name=app_constants.HELM_NS_KUBEVIRT, body=patch)
