@@ -14,6 +14,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
+#
+#  [This file was auto-generated]
+#
+#
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -101,19 +105,6 @@ spec:
           name: profile-data
       imagePullSecrets:
       - name: {{ .Values.kubevirt.imagePullSecrets }}
-      initContainers:
-      - command:
-        - sh
-        - -c
-        - rm -rf /var/opt/kubevirt/*;mkdir -p /var/opt/kubevirt/; mv /virtctl-v1.1.0-linux-amd64
-          /var/opt/kubevirt/; chmod 755 /var/opt/kubevirt/; cp -sf /var/opt/kubevirt/virtctl-v1.1.0-linux-amd64
-          /var/opt/kubevirt/virtctl
-        image: {{ .Values.kubevirt.images.tags.virtCtlImage }}
-        imagePullPolicy: IfNotPresent
-        name: virtctl-init-container
-        volumeMounts:
-        - mountPath: /var/opt/
-          name: controller-dir
       nodeSelector:
         kubernetes.io/os: linux
         node-role.kubernetes.io/control-plane: ''
