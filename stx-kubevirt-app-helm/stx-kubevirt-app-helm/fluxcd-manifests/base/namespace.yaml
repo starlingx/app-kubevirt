@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app.starlingx.io/component: platform
+    kubevirt.io: ''
+    pod-security.kubernetes.io/enforce: privileged
+  name: kubevirt
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app.starlingx.io/component: platform
+    cdi.kubevirt.io: ''
+  name: cdi

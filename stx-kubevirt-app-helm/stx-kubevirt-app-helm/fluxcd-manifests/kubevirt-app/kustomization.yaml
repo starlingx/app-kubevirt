@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 ---
-namespace: kubevirt
+namespace: kube-system
 resources:
   - helmrelease.yaml
 secretGenerator:

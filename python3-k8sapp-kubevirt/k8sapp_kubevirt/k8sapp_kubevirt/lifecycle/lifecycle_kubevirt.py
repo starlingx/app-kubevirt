@@ -11,7 +11,6 @@
 import os
 import yaml
 
-from kubernetes import client
 from oslo_log import log as logging
 from sysinv.common import constants
 from sysinv.common import exception
@@ -46,8 +45,6 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
         # Define a dictionary to map values to lifecycle functions
         action_map = {
             (constants.APP_LIFECYCLE_TYPE_FLUXCD_REQUEST, constants.APP_APPLY_OP,
-             constants.APP_LIFECYCLE_TIMING_PRE): self.pre_apply,
-            (constants.APP_LIFECYCLE_TYPE_FLUXCD_REQUEST, constants.APP_APPLY_OP,
              constants.APP_LIFECYCLE_TIMING_POST): lambda: self.post_apply(app_op, app),
             (constants.APP_LIFECYCLE_TYPE_OPERATION, constants.APP_REMOVE_OP,
              constants.APP_LIFECYCLE_TIMING_PRE): lambda: self.pre_remove(app),
@@ -63,31 +60,6 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
             action_function()
 
         super().app_lifecycle_actions(context, conductor_obj, app_op, app, hook_info)
-
-    def pre_apply(self):
-        """Prepare KubeVirt namespaces for Helm management.
-
-        Patches CDI and KubeVirt namespaces with labels and annotations for Helm
-        before applying the KubeVirt application.
-        """
-
-        LOG.debug(f"Executing pre_apply for {app_constants.HELM_APP_KUBEVIRT} app")
-
-        # Create a Kubernetes client object
-        client_v1 = client.CoreV1Api()
-
-        patches = [{"metadata": {"labels": {"app.kubernetes.io/managed-by": "Helm"}}},
-                   {"metadata": {"annotations": {"meta.helm.sh/release-name":
-                    app_constants.HELM_APP_KUBEVIRT}}},
-                   {"metadata": {"annotations": {"meta.helm.sh/release-namespace":
-                    app_constants.HELM_NS_KUBEVIRT}}}]
-
-        for patch in patches:
-            client_v1.patch_namespace(name=app_constants.HELM_NS_KUBEVIRT, body=patch)
-            client_v1.patch_namespace(name=app_constants.HELM_NS_CDI, body=patch)
-
-        LOG.debug(f"Patched namespaces {app_constants.HELM_NS_KUBEVIRT} \
-          and {app_constants.HELM_NS_CDI}")
 
     def post_apply(self, app_op, app):
         """Perform post-apply actions for the KubeVirt application. """

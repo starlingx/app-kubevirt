@@ -8,7 +8,7 @@ apiVersion: "helm.toolkit.fluxcd.io/v2"
 kind: HelmRelease
 metadata:
   name: kubevirt-app
-  namespace: kubevirt
+  namespace: kube-system
   labels:
     chart_group: starlingx-kubevirt-charts
 spec:
