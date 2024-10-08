@@ -14,11 +14,11 @@ kubevirt:
   componentType: "platform"
   certificateRotate:
     ca:
-      duration: 720h
-      renewBefore: 360h
+      duration: 1440h
+      renewBefore: 720h
     server:
-      duration: 720h
-      renewBefore: 360h
+      duration: 1440h
+      renewBefore: 720h
   images:
     tags:
       virtCtlImage: docker.io/starlingx/stx-kubevirt-app:stx.8.0-v1.1.0
@@ -45,11 +45,11 @@ cdi:
   componentType: "platform"
   certificateRotate:
     ca:
-      duration: 720h
-      renewBefore: 360h
+      duration: 1440h
+      renewBefore: 720h
     server:
-      duration: 720h
-      renewBefore: 360h
+      duration: 1440h
+      renewBefore: 720h
   featureGates:
     - HonorWaitForFirstConsumer
   images:
