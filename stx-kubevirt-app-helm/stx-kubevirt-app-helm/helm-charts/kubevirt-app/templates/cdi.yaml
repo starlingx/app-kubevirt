@@ -32,7 +32,12 @@ spec:
       duration: {{ .Values.cdi.certificateRotate.server.duration }}
       renewBefore: {{ .Values.cdi.certificateRotate.server.renewBefore }}
   config:
-    featureGates: {{ .Values.cdi.featureGates }}
+    {{- if .Values.cdi.featureGates }}
+    featureGates:
+      {{- range .Values.cdi.featureGates }}
+      - {{ . }}
+      {{- end }}
+    {{- end }}
     imagePullSecrets:
     - name: {{ .Values.cdi.imagePullSecrets }}
   imagePullPolicy: IfNotPresent

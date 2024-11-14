@@ -35,7 +35,12 @@ spec:
         renewBefore: {{ .Values.kubevirt.certificateRotate.server.renewBefore }}
   configuration:
     developerConfiguration:
-      featureGates: {{ .Values.kubevirt.featureGates }}
+      {{- if .Values.kubevirt.featureGates }}
+      featureGates:
+        {{- range .Values.kubevirt.featureGates }}
+        - {{ . }}
+        {{- end }}
+      {{- end }}
       useEmulation: {{ .Values.kubevirt.useEmulation }}
   customizeComponents: {}
   imagePullPolicy: IfNotPresent

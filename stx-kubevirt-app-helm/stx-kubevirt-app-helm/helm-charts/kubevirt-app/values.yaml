@@ -19,6 +19,8 @@ kubevirt:
     server:
       duration: 1440h
       renewBefore: 720h
+  featureGates:
+    - Snapshot
   images:
     tags:
       virtCtlImage: docker.io/starlingx/stx-kubevirt-app:stx.8.0-v1.1.0
@@ -39,7 +41,7 @@ kubevirt:
   readinessProbePort: 8443
 
 
-# CDI v.1.58.0(Containerized Data Importer) configuration
+# CDI v1.58.0 (Containerized Data Importer) configuration
 cdi:
   replicas: 1
   componentType: "platform"

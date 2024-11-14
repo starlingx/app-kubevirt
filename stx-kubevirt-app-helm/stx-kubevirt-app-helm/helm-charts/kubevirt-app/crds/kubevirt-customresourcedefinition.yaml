@@ -277,7 +277,8 @@ spec:
                     anyOf:
                     - type: integer
                     - type: string
-                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    pattern: 
+                      ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
                   defaultRuntimeClass:
                     type: string
@@ -303,7 +304,8 @@ spec:
                             anyOf:
                             - type: integer
                             - type: string
-                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            pattern: 
+                              ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                             x-kubernetes-int-or-string: true
                         required:
                         - memoryLimit
@@ -485,7 +487,8 @@ spec:
                         - type: string
                         description: MaxGuest defines the maximum amount memory that
                           can be allocated to the guest using hotplug.
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        pattern: 
+                          ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                         x-kubernetes-int-or-string: true
                       maxHotplugRatio:
                         description: 'MaxHotplugRatio is the ratio used to define
@@ -535,10 +538,10 @@ spec:
                             nodeSelector:
                               additionalProperties:
                                 type: string
-                              description: 'NodeSelector is a selector which must
+                              description: "NodeSelector is a selector which must
                                 be true for the vmi to fit on a node. Selector which
-                                must match a node''s labels for the vmi to be scheduled
-                                on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/'
+                                must match a node's labels for the vmi to be scheduled
+                                on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/"
                               type: object
                           required:
                           - nodeSelector
@@ -575,7 +578,8 @@ spec:
                         description: BandwidthPerMigration limits the amount of network
                           bandwidth live migrations are allowed to use. The value
                           is in quantity per second. Defaults to 0 (no limit)
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        pattern: 
+                          ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                         x-kubernetes-int-or-string: true
                       completionTimeoutPerGiB:
                         description: CompletionTimeoutPerGiB is the maximum number
@@ -797,11 +801,11 @@ spec:
                             resource requirements.
                           properties:
                             claims:
-                              description: "Claims lists the names of resources, defined\
-                                \ in spec.resourceClaims, that are used by this container.\
-                                \ \n This is an alpha field and requires enabling\
-                                \ the DynamicResourceAllocation feature gate. \n This\
-                                \ field is immutable. It can only be set for containers."
+                              description: "Claims lists the names of resources, defined
+                                in spec.resourceClaims, that are used by this container.
+                                \n This is an alpha field and requires enabling the
+                                DynamicResourceAllocation feature gate. \n This field
+                                is immutable. It can only be set for containers."
                               items:
                                 description: ResourceClaim references one entry in
                                   PodSpec.ResourceClaims.
@@ -824,7 +828,8 @@ spec:
                                 anyOf:
                                 - type: integer
                                 - type: string
-                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                pattern: 
+                                  ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                 x-kubernetes-int-or-string: true
                               description: 'Limits describes the maximum amount of
                                 compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
@@ -834,7 +839,8 @@ spec:
                                 anyOf:
                                 - type: integer
                                 - type: string
-                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                pattern: 
+                                  ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                 x-kubernetes-int-or-string: true
                               description: 'Requests describes the minimum amount
                                 of compute resources required. If Requests is omitted
@@ -867,12 +873,12 @@ spec:
                         type: array
                         x-kubernetes-list-type: set
                       minTLSVersion:
-                        description: "MinTLSVersion is a way to specify the minimum\
-                          \ protocol version that is acceptable for TLS connections.\
-                          \ Protocol versions are based on the following most common\
-                          \ TLS configurations: \n   https://ssl-config.mozilla.org/\
-                          \ \n Note that SSLv3.0 is not a supported protocol version\
-                          \ due to well known vulnerabilities such as POODLE: https://en.wikipedia.org/wiki/POODLE"
+                        description: "MinTLSVersion is a way to specify the minimum
+                          protocol version that is acceptable for TLS connections.
+                          Protocol versions are based on the following most common
+                          TLS configurations: \n   https://ssl-config.mozilla.org/
+                          \n Note that SSLv3.0 is not a supported protocol version
+                          due to well known vulnerabilities such as POODLE: https://en.wikipedia.org/wiki/POODLE"
                         enum:
                         - VersionTLS10
                         - VersionTLS11
@@ -2011,23 +2017,23 @@ spec:
                   to handle automated workload updates
                 properties:
                   batchEvictionInterval:
-                    description: "BatchEvictionInterval Represents the interval to\
-                      \ wait before issuing the next batch of shutdowns \n Defaults\
-                      \ to 1 minute"
+                    description: "BatchEvictionInterval Represents the interval to
+                      wait before issuing the next batch of shutdowns \n Defaults
+                      to 1 minute"
                     type: string
                   batchEvictionSize:
-                    description: "BatchEvictionSize Represents the number of VMIs\
-                      \ that can be forced updated per the BatchShutdownInteral interval\
-                      \ \n Defaults to 10"
+                    description: "BatchEvictionSize Represents the number of VMIs
+                      that can be forced updated per the BatchShutdownInteral interval
+                      \n Defaults to 10"
                     type: integer
                   workloadUpdateMethods:
-                    description: "WorkloadUpdateMethods defines the methods that can\
-                      \ be used to disrupt workloads during automated workload updates.\
-                      \ When multiple methods are present, the least disruptive method\
-                      \ takes precedence over more disruptive methods. For example\
-                      \ if both LiveMigrate and Shutdown methods are listed, only\
-                      \ VMs which are not live migratable will be restarted/shutdown\
-                      \ \n An empty list defaults to no automated workload updating"
+                    description: "WorkloadUpdateMethods defines the methods that can
+                      be used to disrupt workloads during automated workload updates.
+                      When multiple methods are present, the least disruptive method
+                      takes precedence over more disruptive methods. For example if
+                      both LiveMigrate and Shutdown methods are listed, only VMs which
+                      are not live migratable will be restarted/shutdown \n An empty
+                      list defaults to no automated workload updating"
                     items:
                       type: string
                     type: array
@@ -3345,7 +3351,8 @@ spec:
                     anyOf:
                     - type: integer
                     - type: string
-                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    pattern: 
+                      ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
                   defaultRuntimeClass:
                     type: string
@@ -3371,7 +3378,8 @@ spec:
                             anyOf:
                             - type: integer
                             - type: string
-                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            pattern: 
+                              ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                             x-kubernetes-int-or-string: true
                         required:
                         - memoryLimit
@@ -3553,7 +3561,8 @@ spec:
                         - type: string
                         description: MaxGuest defines the maximum amount memory that
                           can be allocated to the guest using hotplug.
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        pattern: 
+                          ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                         x-kubernetes-int-or-string: true
                       maxHotplugRatio:
                         description: 'MaxHotplugRatio is the ratio used to define
@@ -3603,10 +3612,10 @@ spec:
                             nodeSelector:
                               additionalProperties:
                                 type: string
-                              description: 'NodeSelector is a selector which must
+                              description: "NodeSelector is a selector which must
                                 be true for the vmi to fit on a node. Selector which
-                                must match a node''s labels for the vmi to be scheduled
-                                on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/'
+                                must match a node's labels for the vmi to be scheduled
+                                on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/"
                               type: object
                           required:
                           - nodeSelector
@@ -3643,7 +3652,8 @@ spec:
                         description: BandwidthPerMigration limits the amount of network
                           bandwidth live migrations are allowed to use. The value
                           is in quantity per second. Defaults to 0 (no limit)
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        pattern: 
+                          ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                         x-kubernetes-int-or-string: true
                       completionTimeoutPerGiB:
                         description: CompletionTimeoutPerGiB is the maximum number
@@ -3865,11 +3875,11 @@ spec:
                             resource requirements.
                           properties:
                             claims:
-                              description: "Claims lists the names of resources, defined\
-                                \ in spec.resourceClaims, that are used by this container.\
-                                \ \n This is an alpha field and requires enabling\
-                                \ the DynamicResourceAllocation feature gate. \n This\
-                                \ field is immutable. It can only be set for containers."
+                              description: "Claims lists the names of resources, defined
+                                in spec.resourceClaims, that are used by this container.
+                                \n This is an alpha field and requires enabling the
+                                DynamicResourceAllocation feature gate. \n This field
+                                is immutable. It can only be set for containers."
                               items:
                                 description: ResourceClaim references one entry in
                                   PodSpec.ResourceClaims.
@@ -3892,7 +3902,8 @@ spec:
                                 anyOf:
                                 - type: integer
                                 - type: string
-                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                pattern: 
+                                  ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                 x-kubernetes-int-or-string: true
                               description: 'Limits describes the maximum amount of
                                 compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
@@ -3902,7 +3913,8 @@ spec:
                                 anyOf:
                                 - type: integer
                                 - type: string
-                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                pattern: 
+                                  ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                 x-kubernetes-int-or-string: true
                               description: 'Requests describes the minimum amount
                                 of compute resources required. If Requests is omitted
@@ -3935,12 +3947,12 @@ spec:
                         type: array
                         x-kubernetes-list-type: set
                       minTLSVersion:
-                        description: "MinTLSVersion is a way to specify the minimum\
-                          \ protocol version that is acceptable for TLS connections.\
-                          \ Protocol versions are based on the following most common\
-                          \ TLS configurations: \n   https://ssl-config.mozilla.org/\
-                          \ \n Note that SSLv3.0 is not a supported protocol version\
-                          \ due to well known vulnerabilities such as POODLE: https://en.wikipedia.org/wiki/POODLE"
+                        description: "MinTLSVersion is a way to specify the minimum
+                          protocol version that is acceptable for TLS connections.
+                          Protocol versions are based on the following most common
+                          TLS configurations: \n   https://ssl-config.mozilla.org/
+                          \n Note that SSLv3.0 is not a supported protocol version
+                          due to well known vulnerabilities such as POODLE: https://en.wikipedia.org/wiki/POODLE"
                         enum:
                         - VersionTLS10
                         - VersionTLS11
@@ -5079,23 +5091,23 @@ spec:
                   to handle automated workload updates
                 properties:
                   batchEvictionInterval:
-                    description: "BatchEvictionInterval Represents the interval to\
-                      \ wait before issuing the next batch of shutdowns \n Defaults\
-                      \ to 1 minute"
+                    description: "BatchEvictionInterval Represents the interval to
+                      wait before issuing the next batch of shutdowns \n Defaults
+                      to 1 minute"
                     type: string
                   batchEvictionSize:
-                    description: "BatchEvictionSize Represents the number of VMIs\
-                      \ that can be forced updated per the BatchShutdownInteral interval\
-                      \ \n Defaults to 10"
+                    description: "BatchEvictionSize Represents the number of VMIs
+                      that can be forced updated per the BatchShutdownInteral interval
+                      \n Defaults to 10"
                     type: integer
                   workloadUpdateMethods:
-                    description: "WorkloadUpdateMethods defines the methods that can\
-                      \ be used to disrupt workloads during automated workload updates.\
-                      \ When multiple methods are present, the least disruptive method\
-                      \ takes precedence over more disruptive methods. For example\
-                      \ if both LiveMigrate and Shutdown methods are listed, only\
-                      \ VMs which are not live migratable will be restarted/shutdown\
-                      \ \n An empty list defaults to no automated workload updating"
+                    description: "WorkloadUpdateMethods defines the methods that can
+                      be used to disrupt workloads during automated workload updates.
+                      When multiple methods are present, the least disruptive method
+                      takes precedence over more disruptive methods. For example if
+                      both LiveMigrate and Shutdown methods are listed, only VMs which
+                      are not live migratable will be restarted/shutdown \n An empty
+                      list defaults to no automated workload updating"
                     items:
                       type: string
                     type: array
