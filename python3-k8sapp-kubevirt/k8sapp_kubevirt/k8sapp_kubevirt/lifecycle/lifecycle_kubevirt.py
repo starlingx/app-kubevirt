@@ -17,6 +17,7 @@ from sysinv.common import exception
 from sysinv.common import kubernetes
 from sysinv.common import utils as cutils
 from sysinv.helm import lifecycle_base as base
+from sysinv.helm.lifecycle_constants import LifecycleConstants
 
 from k8sapp_kubevirt.common import constants as app_constants
 
@@ -44,12 +45,12 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
 
         # Define a dictionary to map values to lifecycle functions
         action_map = {
-            (constants.APP_LIFECYCLE_TYPE_FLUXCD_REQUEST, constants.APP_APPLY_OP,
-             constants.APP_LIFECYCLE_TIMING_POST): lambda: self.post_apply(app_op, app),
-            (constants.APP_LIFECYCLE_TYPE_OPERATION, constants.APP_REMOVE_OP,
-             constants.APP_LIFECYCLE_TIMING_PRE): lambda: self.pre_remove(app),
-            (constants.APP_LIFECYCLE_TYPE_OPERATION, constants.APP_REMOVE_OP,
-             constants.APP_LIFECYCLE_TIMING_POST): lambda: self.post_remove(app)
+            (LifecycleConstants.APP_LIFECYCLE_TYPE_FLUXCD_REQUEST, constants.APP_APPLY_OP,
+             LifecycleConstants.APP_LIFECYCLE_TIMING_POST): lambda: self.post_apply(app_op, app),
+            (LifecycleConstants.APP_LIFECYCLE_TYPE_OPERATION, constants.APP_REMOVE_OP,
+             LifecycleConstants.APP_LIFECYCLE_TIMING_PRE): lambda: self.pre_remove(app),
+            (LifecycleConstants.APP_LIFECYCLE_TYPE_OPERATION, constants.APP_REMOVE_OP,
+             LifecycleConstants.APP_LIFECYCLE_TIMING_POST): lambda: self.post_remove(app)
         }
 
         # Get the appropriate lifecylce function from the dictionary based on the values
