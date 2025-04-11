@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copyright (c) 2024 Wind River Systems, Inc.
+# Copyright (c) 2025 Wind River Systems, Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -94,6 +94,7 @@ rules:
   - admissionregistration.k8s.io
   resourceNames:
   - cdi-api-datavolume-mutate
+  - cdi-api-pvc-mutate
   resources:
   - mutatingwebhookconfigurations
   verbs:
@@ -131,6 +132,24 @@ rules:
   - persistentvolumeclaims
   verbs:
   - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - ''
   resources:
@@ -143,6 +162,8 @@ rules:
   - volumesnapshots
   verbs:
   - get
+  - list
+  - watch
 - apiGroups:
   - cdi.kubevirt.io
   resources:
@@ -159,9 +180,35 @@ rules:
 - apiGroups:
   - cdi.kubevirt.io
   resources:
+  - volumeclonesources
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cdi.kubevirt.io
+  resources:
+  - storageprofiles
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cdi.kubevirt.io
+  resources:
   - cdis
   verbs:
   - get
+  - list
+  - watch
+- apiGroups:
+  - cdi.kubevirt.io
+  resources:
+  - cdiconfigs
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - cdi.kubevirt.io
   resources:
@@ -235,10 +282,17 @@ rules:
   - config.openshift.io
   resources:
   - proxies
+  - infrastructures
   verbs:
   - get
   - list
   - watch
+- apiGroups:
+  - config.openshift.io
+  resources:
+  - clusterversions
+  verbs:
+  - get
 - apiGroups:
   - cdi.kubevirt.io
   resources:
@@ -300,6 +354,15 @@ rules:
   - virtualmachines/finalizers
   verbs:
   - update
+- apiGroups:
+  - forklift.cdi.kubevirt.io
+  resources:
+  - ovirtvolumepopulators
+  - openstackvolumepopulators
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - ''
   resources:

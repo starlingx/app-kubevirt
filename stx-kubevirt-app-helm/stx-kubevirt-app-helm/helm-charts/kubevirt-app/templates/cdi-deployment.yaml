@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copyright (c) 2024 Wind River Systems, Inc.
+# Copyright (c) 2025 Wind River Systems, Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -23,6 +23,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    cdi.kubevirt.io: cdi-operator
     name: cdi-operator
     operator.cdi.kubevirt.io: ''
     prometheus.cdi.kubevirt.io: 'true'
@@ -37,23 +38,40 @@ spec:
   strategy: {}
   template:
     metadata:
+      annotations:
+        openshift.io/required-scc: restricted-v2
       labels:
+        cdi.kubevirt.io: cdi-operator
         name: cdi-operator
         operator.cdi.kubevirt.io: ''
         prometheus.cdi.kubevirt.io: 'true'
     spec:
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: cdi.kubevirt.io
+                  operator: In
+                  values:
+                  - cdi-operator
+              topologyKey: kubernetes.io/hostname
+            weight: 1
       containers:
       - env:
         - name: DEPLOY_CLUSTER_RESOURCES
           value: 'true'
         - name: OPERATOR_VERSION
-          value: v1.58.0
+          value: v1.62.0
         - name: CONTROLLER_IMAGE
-          value: {{ .Values.cdi.images.tags.cdiControlerImage }}
+          value: {{ .Values.cdi.images.tags.cdiControllerImage }}
         - name: IMPORTER_IMAGE
           value: {{ .Values.cdi.images.tags.cdiImporterImage }}
         - name: CLONER_IMAGE
           value: {{ .Values.cdi.images.tags.cdiClonerImage }}
+        - name: OVIRT_POPULATOR_IMAGE
+          value: {{ .Values.cdi.images.tags.cdiImporterImage }}
         - name: APISERVER_IMAGE
           value: {{ .Values.cdi.images.tags.cdiApiServerImage }}
         - name: UPLOAD_SERVER_IMAGE
@@ -83,6 +101,8 @@ spec:
           runAsNonRoot: true
           seccompProfile:
             type: RuntimeDefault
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
       imagePullSecrets:
       - name: {{ .Values.cdi.imagePullSecrets }}
       nodeSelector:
