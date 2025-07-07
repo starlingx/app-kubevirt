@@ -76,6 +76,10 @@ class KubeVirtHelm(base.FluxCDBaseHelm):
                     'server': {
                         'duration': app_constants.CDI_CERTIFICATE_ROTATE_SERVER_DURATION,
                         'renewBefore': app_constants.CDI_CERTIFICATE_ROTATE_SERVER_RENEW_BEFORE,
+                    },
+                    'client': {
+                        'duration': app_constants.CDI_CERTIFICATE_ROTATE_CLIENT_DURATION,
+                        'renewBefore': app_constants.CDI_CERTIFICATE_ROTATE_CLIENT_RENEW_BEFORE,
                     }
                 }
             }

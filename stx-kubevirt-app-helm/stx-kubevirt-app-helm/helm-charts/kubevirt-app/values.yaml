@@ -15,8 +15,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 #
-#  [This file was auto-generated]
-#
 #
 
 # Helm Values file for KubeVirt v1.5.0 and CDI v1.62.0
@@ -27,6 +25,9 @@ cdi:
       duration: 1440h
       renewBefore: 720h
     server:
+      duration: 1440h
+      renewBefore: 720h
+    client:
       duration: 1440h
       renewBefore: 720h
   componentType: platform

@@ -28,6 +28,9 @@ spec:
     ca:
       duration: {{ .Values.cdi.certificateRotate.ca.duration }}
       renewBefore: {{ .Values.cdi.certificateRotate.ca.renewBefore }}
+    client:
+      duration: {{ .Values.cdi.certificateRotate.client.duration }}
+      renewBefore: {{ .Values.cdi.certificateRotate.client.renewBefore }}
     server:
       duration: {{ .Values.cdi.certificateRotate.server.duration }}
       renewBefore: {{ .Values.cdi.certificateRotate.server.renewBefore }}
