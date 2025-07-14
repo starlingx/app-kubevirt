@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copyright (c) 2024 Wind River Systems, Inc.
+# Copyright (c) 2025 Wind River Systems, Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -35,6 +35,8 @@ spec:
     type: RollingUpdate
   template:
     metadata:
+      annotations:
+        openshift.io/required-scc: restricted-v2
       labels:
         kubevirt.io: virt-operator
         name: virt-operator
@@ -69,7 +71,7 @@ spec:
             fieldRef:
               fieldPath: metadata.annotations['olm.targetNamespaces']
         - name: KUBEVIRT_VERSION
-          value: v1.1.0
+          value: v1.5.0
         image: {{ .Values.kubevirt.images.tags.virtOperatorImage }}
         imagePullPolicy: IfNotPresent
         name: virt-operator

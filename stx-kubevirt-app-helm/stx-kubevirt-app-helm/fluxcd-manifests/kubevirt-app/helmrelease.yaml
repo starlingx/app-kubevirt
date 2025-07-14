@@ -1,8 +1,10 @@
 #
-## Copyright (c) 2024 Wind River Systems, Inc.
+## Copyright (c) 2025 Wind River Systems, Inc.
 ##
 ## SPDX-License-Identifier: Apache-2.0
 #
+#    - Auto Updated Contents 2025-04-11 18:08:12 -
+
 ---
 apiVersion: "helm.toolkit.fluxcd.io/v2"
 kind: HelmRelease
@@ -16,7 +18,7 @@ spec:
   chart:
     spec:
       chart: kubevirt-app
-      version: 1.1.0
+      version: 1.5.0
       sourceRef:
         kind: HelmRepository
         name: stx-platform-kubevirt
