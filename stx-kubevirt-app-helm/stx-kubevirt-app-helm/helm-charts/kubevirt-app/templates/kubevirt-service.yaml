@@ -37,6 +37,36 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: virt-api-kubevirt-prometheus-metrics
+  namespace: kubevirt
+spec:
+  internalTrafficPolicy: Local
+  ports:
+  - name: metrics
+    port: 8443
+    protocol: TCP
+    targetPort: metrics
+  selector:
+    kubevirt.io: virt-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: virt-operator-kubevirt-prometheus-metrics
+  namespace: kubevirt
+spec:
+  internalTrafficPolicy: Local
+  ports:
+  - name: metrics
+    port: 8443
+    protocol: TCP
+    targetPort: metrics
+  selector:
+    kubevirt.io: virt-operator
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: virt-controller-kubevirt-prometheus-metrics
   namespace: kubevirt
 spec:
