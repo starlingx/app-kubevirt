@@ -14,6 +14,8 @@ metadata:
   labels:
     chart_group: starlingx-kubevirt-charts
 spec:
+  driftDetection:
+    mode: enabled
   releaseName: kubevirt-app
   chart:
     spec:
@@ -28,8 +30,10 @@ spec:
   test:
     enable: false
   install:
+    crds: CreateReplace
     disableHooks: false
   upgrade:
+    crds: CreateReplace
     disableHooks: false
   valuesFrom:
     - kind: Secret
