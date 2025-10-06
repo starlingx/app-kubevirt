@@ -50,7 +50,8 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
             (LifecycleConstants.APP_LIFECYCLE_TYPE_OPERATION, constants.APP_REMOVE_OP,
              LifecycleConstants.APP_LIFECYCLE_TIMING_PRE): lambda: self.pre_remove(app),
             (LifecycleConstants.APP_LIFECYCLE_TYPE_OPERATION, constants.APP_REMOVE_OP,
-             LifecycleConstants.APP_LIFECYCLE_TIMING_POST): lambda: self.post_remove(app)
+             LifecycleConstants.APP_LIFECYCLE_TIMING_POST): (
+                lambda: self.post_remove())  # pylint: disable=unnecessary-lambda
         }
 
         # Get the appropriate lifecylce function from the dictionary based on the values
@@ -175,61 +176,319 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
                 grace_periods_seconds=0
             )
 
+    def _wait_for_deletion(self, resource_type, selector="--all", namespace=None, timeout=30):
+        """Wait for Kubernetes resources to be deleted."""
+        cmd = ['kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+               'wait', '--for=delete', resource_type, selector, f'--timeout={timeout}s']
+        if namespace:
+            cmd.extend(['-n', namespace])
+
+        _, stderr = cutils.trycmd(*cmd)
+        return 'timed out' not in stderr.lower()
+
+    def _delete_and_wait(self, resource_type, selector="--all", namespace=None, timeout=30):
+        """Delete resources and wait for actual deletion."""
+        # Delete
+        cmd = ['kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+               'delete', resource_type, selector, f'--timeout={timeout}s']
+        if namespace:
+            cmd.extend(['-n', namespace])
+        cutils.trycmd(*cmd)
+
+        # Wait for actual deletion
+        return self._wait_for_deletion(resource_type, selector, namespace, timeout)
+
+    # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     def pre_remove(self, app):
         """Pre application removal tasks.
 
-        Due to the ordering of deletes, to prevent the namespace finalizer from
-        waiting indefinitely, we need to ensure that the kubevirt and cdi custom
-        resources are deleted, and the finalizer removed from the
-        helmreleases.helm.toolkit.fluxcd.io resource, in the kubevirt namespace.
+        Performs comprehensive cleanup before application removal to ensure
+        complete resource cleanup and prevent circular dependencies. This
+        method executes the following cleanup sequence:
+
+        1. Stop all Virtual Machines to prevent orphaned resources
+        2. Suspend FluxCD reconciliation to prevent resource recreation
+        3. Stop all workloads (deployments, daemonsets, statefulsets, jobs)
+        4. Force kill any remaining pods
+        5. Delete webhook configurations and services to prevent validation
+        6. Strip finalizers and force delete custom resources (KubeVirt, CDI)
+        7. Force delete all kubevirt/cdi CRDs regardless of management
+        8. Clean up all kubevirt/cdi APIServices
+        9. Clean namespaces while preserving namespace objects
 
         :param app: The application object.
         """
 
-        LOG.debug(f"Executing pre_remove for {app_constants.HELM_APP_KUBEVIRT} app")
+        LOG.debug(f"Executing pre_remove for "
+                  f"{app_constants.HELM_APP_KUBEVIRT} app")
 
+        # Step 1: Stop all Virtual Machines before cleanup
+        LOG.debug(f"{app.name} app: Stopping all Virtual Machines")
         cmd = [
             'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
-            'delete', app_constants.HELM_APP_CDI_CR, '-n', app_constants.HELM_NS_CDI
+            'get', 'vm,vmi', '--all-namespaces', '-o', 'wide'
         ]
         stdout, stderr = cutils.trycmd(*cmd)
-        LOG.debug(f"{app.name} app: cmd={cmd} stdout={stdout} stderr={stderr}")
+        if stdout and 'No resources found' not in stdout:
+            LOG.debug(f"{app.name} app: Running VMs detected - stopping them")
 
+            # Try graceful deletion first
+            if not self._delete_and_wait('vm', '--all-namespaces', timeout=60):
+                LOG.debug(f"{app.name} app: VM graceful deletion timed out, forcing")
+
+                # Force delete VMs after timeout
+                cmd = [
+                    'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                    'delete', 'vm', '--all', '--all-namespaces',
+                    '--force', '--grace-period=0'
+                ]
+                stdout, stderr = cutils.trycmd(*cmd)
+                LOG.debug(f"{app.name} app: VM force deletion: "
+                          f"stdout={stdout} stderr={stderr}")
+
+            # Force delete VMIs directly
+            self._delete_and_wait('vmi', '--all-namespaces', timeout=30)
+
+        # Step 2: Suspend FluxCD reconciliation to prevent recreation
+        LOG.debug(f"{app.name} app: Suspending FluxCD reconciliation")
         cmd = [
             'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
-            'delete', app_constants.HELM_APP_KUBEVIRT_CR, '-n', app_constants.HELM_NS_KUBEVIRT
+            'patch', 'helmrelease', app_constants.HELM_APP_KUBEVIRT,
+            '-n', 'kube-system', '--type=merge',
+            '-p', '{"spec":{"suspend":true}}'
         ]
         stdout, stderr = cutils.trycmd(*cmd)
-        LOG.debug(f"{app.name} app: cmd={cmd} stdout={stdout} stderr={stderr}")
+        LOG.debug(f"{app.name} app: suspended FluxCD reconciliation: "
+                  f"stdout={stdout} stderr={stderr}")
 
-    def post_remove(self, app):
+        # Step 3: Stop all workloads to prevent recreation during cleanup
+        LOG.debug(f"{app.name} app: Stopping all workloads")
+        for namespace in [app_constants.HELM_NS_KUBEVIRT,
+                          app_constants.HELM_NS_CDI]:
+            self._delete_and_wait('deploy,daemonset,statefulset,job',
+                                  namespace=namespace, timeout=60)
+
+        # Step 4: Force kill any remaining pods
+        LOG.debug(f"{app.name} app: Force killing remaining pods")
+        for namespace in [app_constants.HELM_NS_KUBEVIRT,
+                          app_constants.HELM_NS_CDI]:
+            # Use force delete for pods that might be stuck
+            cmd = [
+                'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                'delete', 'pods', '--all', '-n', namespace,
+                '--force', '--grace-period=0'
+            ]
+            stdout, stderr = cutils.trycmd(*cmd)
+            # Wait for pods to actually be gone
+            self._wait_for_deletion('pods', namespace=namespace, timeout=30)
+
+        # Step 5: Delete webhooks to break circular dependencies
+        LOG.debug(f"{app.name} app: Deleting webhooks")
+        webhook_types = ['validatingwebhookconfigurations',
+                         'mutatingwebhookconfigurations']
+        for webhook_type in webhook_types:
+            # Get webhook names containing kubevirt or cdi
+            cmd = [
+                'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                'get', webhook_type, '-o', 'name'
+            ]
+            stdout, stderr = cutils.trycmd(*cmd)
+            if stdout:
+                webhooks = [w.strip() for w in stdout.split('\n')
+                            if w.strip() and ('kubevirt' in w.lower() or
+                                              w.lower().startswith('cdi-'))]
+                for webhook in webhooks:
+                    cmd = [
+                        'kubectl', '--kubeconfig',
+                        kubernetes.KUBERNETES_ADMIN_CONF,
+                        'delete', webhook, '--ignore-not-found=true'
+                    ]
+                    stdout, stderr = cutils.trycmd(*cmd)
+                    LOG.debug(f"{app.name} app: deleted webhook {webhook}: "
+                              f"stdout={stdout} stderr={stderr}")
+
+        # Also delete specific webhook configurations that cause validation
+        LOG.debug(f"{app.name} app: Deleting specific webhook configurations")
+        webhook_configs = ['virt-api-validator', 'virt-operator-validator',
+                           'cdi-api-datavolume-validate']
+        for config in webhook_configs:
+            cmd = [
+                'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                'delete', 'validatingwebhookconfigurations', config,
+                '--ignore-not-found=true'
+            ]
+            stdout, stderr = cutils.trycmd(*cmd)
+            LOG.debug(f"{app.name} app: deleted validating webhook {config}: "
+                      f"stdout={stdout} stderr={stderr}")
+
+            cmd = [
+                'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                'delete', 'mutatingwebhookconfigurations', config,
+                '--ignore-not-found=true'
+            ]
+            stdout, stderr = cutils.trycmd(*cmd)
+            LOG.debug(f"{app.name} app: deleted mutating webhook {config}: "
+                      f"stdout={stdout} stderr={stderr}")
+
+        # Delete webhook services to prevent validation calls
+        LOG.debug(f"{app.name} app: Deleting webhook services")
+        webhook_services = ['kubevirt-operator-webhook', 'cdi-api']
+        for service in webhook_services:
+            for namespace in [app_constants.HELM_NS_KUBEVIRT,
+                              app_constants.HELM_NS_CDI]:
+                cmd = [
+                    'kubectl', '--kubeconfig',
+                    kubernetes.KUBERNETES_ADMIN_CONF,
+                    'delete', 'service', service, '-n', namespace,
+                    '--ignore-not-found=true'
+                ]
+                stdout, stderr = cutils.trycmd(*cmd)
+                LOG.debug(f"{app.name} app: deleted service {service} "
+                          f"in {namespace}: stdout={stdout} stderr={stderr}")
+
+        # Wait for webhook deletions to be processed
+        LOG.debug(f"{app.name} app: Waiting for webhook deletions to complete")
+        # Try to wait for specific webhooks to be deleted
+        webhook_configs = ['virt-api-validator', 'virt-operator-validator',
+                           'cdi-api-datavolume-validate']
+        for config in webhook_configs:
+            self._wait_for_deletion('validatingwebhookconfigurations', config, timeout=10)
+
+        # Step 6: Strip finalizers from custom resources before deletion
+        LOG.debug(f"{app.name} app: Stripping finalizers from custom "
+                  "resources")
+        custom_resources = [
+            ('kubevirt', 'kubevirt', app_constants.HELM_NS_KUBEVIRT),
+            ('cdi', 'cdi', app_constants.HELM_NS_CDI)
+        ]
+        for resource_type, resource_name, namespace in custom_resources:
+            # Strip finalizers first - this prevents webhook validation
+            cmd = [
+                'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                'patch', resource_type, resource_name, '-n', namespace,
+                '--type=merge', '-p', '{"metadata":{"finalizers":[]}}'
+            ]
+            stdout, stderr = cutils.trycmd(*cmd)
+            LOG.debug(f"{app.name} app: stripped finalizers from "
+                      f"{resource_type}/{resource_name}: "
+                      f"stdout={stdout} stderr={stderr}")
+
+            # Force delete the custom resource without waiting for validation
+            cmd = [
+                'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                'delete', resource_type, resource_name, '-n', namespace,
+                '--ignore-not-found=true', '--wait=false',
+                '--force', '--grace-period=0'
+            ]
+            stdout, stderr = cutils.trycmd(*cmd)
+            LOG.debug(f"{app.name} app: force deleted "
+                      f"{resource_type}/{resource_name}: "
+                      f"stdout={stdout} stderr={stderr}")
+
+        # Step 7: Get ALL kubevirt/cdi CRDs and force delete them
+        # Note: These CRDs are managed by operators, not Helm, so they require
+        # explicit cleanup during application removal
+        LOG.debug(f"{app.name} app: Force deleting ALL kubevirt/cdi CRDs")
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'get', 'crd', '-o', 'name'
+        ]
+        stdout, stderr = cutils.trycmd(*cmd)
+        if stdout:
+            # Delete ALL CRDs containing kubevirt or cdi
+            all_crds = [c.strip() for c in stdout.split('\n')
+                        if c.strip() and ('kubevirt' in c.lower() or
+                                          c.lower().startswith('cdi-'))]
+
+            for crd in all_crds:
+                if crd:
+                    # Try normal deletion first
+                    cmd = [
+                        'kubectl', '--kubeconfig',
+                        kubernetes.KUBERNETES_ADMIN_CONF,
+                        'delete', crd, '--ignore-not-found=true',
+                        '--timeout=30s'
+                    ]
+                    stdout, stderr = cutils.trycmd(*cmd)
+
+                    # If deletion fails, force remove finalizers and try again
+                    if stderr and 'timeout' in stderr.lower():
+                        LOG.debug(f"{app.name} app: Force removing "
+                                  f"finalizers from {crd}")
+                        cmd = [
+                            'kubectl', '--kubeconfig',
+                            kubernetes.KUBERNETES_ADMIN_CONF,
+                            'patch', crd, '--type=merge',
+                            '-p', '{"metadata":{"finalizers":[]}}'
+                        ]
+                        stdout, stderr = cutils.trycmd(*cmd)
+
+                        cmd = [
+                            'kubectl', '--kubeconfig',
+                            kubernetes.KUBERNETES_ADMIN_CONF,
+                            'delete', crd, '--ignore-not-found=true',
+                            '--timeout=10s'
+                        ]
+                        stdout, stderr = cutils.trycmd(*cmd)
+
+                    LOG.debug(f"{app.name} app: processed CRD {crd}: "
+                              f"stdout={stdout} stderr={stderr}")
+
+        # Step 8: Clean up APIServices
+        LOG.debug(f"{app.name} app: Cleaning up APIServices")
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'get', 'apiservice', '-o', 'name'
+        ]
+        stdout, stderr = cutils.trycmd(*cmd)
+        if stdout:
+            apiservices = [a.strip() for a in stdout.split('\n')
+                           if a.strip() and '.kubevirt.io' in a.lower()]
+            for apiservice in apiservices:
+                cmd = [
+                    'kubectl', '--kubeconfig',
+                    kubernetes.KUBERNETES_ADMIN_CONF,
+                    'delete', apiservice, '--ignore-not-found=true',
+                    '--timeout=10s'
+                ]
+                stdout, stderr = cutils.trycmd(*cmd)
+                LOG.debug(f"{app.name} app: deleted APIService {apiservice}: "
+                          f"stdout={stdout} stderr={stderr}")
+
+        # Step 9: Clean namespaces but preserve them
+        LOG.debug(f"{app.name} app: Cleaning namespaces")
+        for namespace in [app_constants.HELM_NS_KUBEVIRT,
+                          app_constants.HELM_NS_CDI]:
+            # Delete all remaining resources in namespace
+            cmd = [
+                'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                'delete', 'all', '--all', '-n', namespace,
+                '--force', '--grace-period=0'
+            ]
+            cutils.trycmd(*cmd)
+
+            # Remove finalizers from namespace to prevent blocking
+            cmd = [
+                'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                'patch', 'namespace', namespace, '--type=merge',
+                '-p', '{"metadata":{"finalizers":[]}}'
+            ]
+            stdout, stderr = cutils.trycmd(*cmd)
+            LOG.debug(f"{app.name} app: cleaned namespace {namespace}: "
+                      f"stdout={stdout} stderr={stderr}")
+
+        LOG.debug(f"{app.name} app: pre_remove comprehensive cleanup "
+                  "completed")
+
+    def post_remove(self):
         """Execute post-remove actions for the applications
 
         This method is responsible for performing cleanup actions after an
         application has been removed. It includes deleting Custom Resource Definitions
         (CRDs), removing symbolic links and binaries, and cleaning up directories.
-
-        :param app: The application object.
         """
 
         LOG.debug(f"Executing post_remove for {app_constants.HELM_APP_KUBEVIRT} app")
-
-        # Helm doesn't delete CRDs.  To clean up after application-remove, we need to explicitly
-        # delete the CRDs.
-        cmd = [
-            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
-            'delete', 'crd', app_constants.HELM_APP_CDI_CRD
-        ]
-        stdout, stderr = cutils.trycmd(*cmd)
-
-        # CDI and KubeVirt CRDs are independent of each other; the CRD for CDI can be
-        # safely deleted even if deleting the KubeVirt CRD fails above.
-        cmd = [
-            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
-            'delete', 'crd', app_constants.HELM_APP_KUBEVIRT_CRD
-        ]
-        stdout, stderr = cutils.trycmd(*cmd)
-        LOG.debug(f"{app.name} app: cmd={cmd} stdout={stdout} stderr={stderr}")
 
         # Remove virtctl sym link
         if os.path.exists(app_constants.HELM_VIRTCTL_LINK_PATH):
