@@ -26,6 +26,7 @@ HELM_APP_CDI = 'cdi'
 HELM_APP_CDI_CR = 'cdi.cdi.kubevirt.io/cdi'
 HELM_APP_CDI_CRD = 'cdis.cdi.kubevirt.io'
 HELM_NS_CDI = 'cdi'
+HELM_RELEASE_NS = 'kube-system'
 
 HELM_VIRTCTL_DIR = '/var/opt/kubevirt/'
 HELM_VIRTCTL_FILE_NAME = 'virtctl-v1.5.0-linux-amd64'
