@@ -1,3 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright (c) 2022-2026 Wind River Systems, Inc.
+#
+# Copyright 2017 The KubeVirt Authors
+#
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,41 +17,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copyright (c) 2025 Wind River Systems, Inc.
 #
-# SPDX-License-Identifier: Apache-2.0
-#
-#
-#  [This file was auto-generated]
+# [This file was auto-generated]
 #
 #
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    kubevirt.io: ''
-  name: kubevirt-registry-cr
-  namespace: kube-system
-rules:
-- apiGroups:
-  - ''
-  resources:
-  - secrets
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - patch
-  - delete
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  labels:
-    operator.kubevirt.io: ''
-    rbac.authorization.k8s.io/aggregate-to-admin: 'true'
+    operator.kubevirt.io: ""
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
   name: kubevirt.io:operator
 rules:
 - apiGroups:
@@ -65,7 +47,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    kubevirt.io: ''
+    kubevirt.io: ""
   name: kubevirt-operator
 rules:
 - apiGroups:
@@ -80,7 +62,7 @@ rules:
   - update
   - patch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - serviceaccounts
   - services
@@ -95,7 +77,7 @@ rules:
   - delete
   - patch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - configmaps
   verbs:
@@ -233,7 +215,7 @@ rules:
   - update
   - patch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - namespaces
   verbs:
@@ -242,7 +224,7 @@ rules:
   - watch
   - patch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - pods
   verbs:
@@ -262,7 +244,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - ''
+  - ""
   resources:
   - persistentvolumeclaims
   verbs:
@@ -291,7 +273,7 @@ rules:
   - watch
   - list
 - apiGroups:
-  - ''
+  - ""
   resources:
   - configmaps
   verbs:
@@ -299,7 +281,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - limitranges
   verbs:
@@ -341,7 +323,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - namespaces
   verbs:
@@ -376,7 +358,7 @@ rules:
   - list
   - get
 - apiGroups:
-  - ''
+  - ""
   resources:
   - namespaces
   verbs:
@@ -396,7 +378,7 @@ rules:
   - create
   - patch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - pods
   - configmaps
@@ -411,7 +393,7 @@ rules:
   - create
   - patch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - events
   verbs:
@@ -419,31 +401,31 @@ rules:
   - create
   - patch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - secrets
   verbs:
   - create
 - apiGroups:
-  - ''
+  - ""
   resources:
   - pods/finalizers
   verbs:
   - update
 - apiGroups:
-  - ''
+  - ""
   resources:
   - pods/eviction
   verbs:
   - create
 - apiGroups:
-  - ''
+  - ""
   resources:
   - pods/status
   verbs:
   - patch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - nodes
   verbs:
@@ -470,7 +452,7 @@ rules:
   - get
   - update
 - apiGroups:
-  - ''
+  - ""
   resources:
   - persistentvolumeclaims
   verbs:
@@ -642,13 +624,13 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - ''
+  - ""
   resources:
   - namespaces
   verbs:
   - get
 - apiGroups:
-  - ''
+  - ""
   resources:
   - resourcequotas
   verbs:
@@ -671,7 +653,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - nodes
   verbs:
@@ -680,7 +662,7 @@ rules:
   - watch
   - get
 - apiGroups:
-  - ''
+  - ""
   resources:
   - configmaps
   verbs:
@@ -688,7 +670,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - ''
+  - ""
   resources:
   - events
   verbs:
@@ -1190,3 +1172,23 @@ rules:
   - subjectaccessreviews
   verbs:
   - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    kubevirt.io: ""
+  name: kubevirt-registry-cr
+  namespace: kube-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - patch
+  - delete

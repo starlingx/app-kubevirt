@@ -1,3 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright (c) 2022-2026 Wind River Systems, Inc.
+#
+# Copyright 2017 The KubeVirt Authors
+#
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -9,16 +16,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# Copyright (c) 2025 Wind River Systems, Inc.
-#
-# SPDX-License-Identifier: Apache-2.0
-#
-#
-#
-
-# Helm Values file for KubeVirt v1.5.0 and CDI v1.62.0
----
 cdi:
   certificateRotate:
     ca:
@@ -34,17 +31,17 @@ cdi:
   containerPorts:
     metricsPort: 8080
   featureGates:
-  - HonorWaitForFirstConsumer
+    - HonorWaitForFirstConsumer
   imagePullSecrets: default-registry-key
   images:
     tags:
-      cdiApiServerImage: quay.io/kubevirt/cdi-apiserver:v1.62.0
-      cdiClonerImage: quay.io/kubevirt/cdi-cloner:v1.62.0
-      cdiControllerImage: quay.io/kubevirt/cdi-controller:v1.62.0
-      cdiImporterImage: quay.io/kubevirt/cdi-importer:v1.62.0
-      cdiOperatorImage: quay.io/kubevirt/cdi-operator:v1.62.0
-      cdiUploadProxyImage: quay.io/kubevirt/cdi-uploadproxy:v1.62.0
-      cdiUploadServerImage: quay.io/kubevirt/cdi-uploadserver:v1.62.0
+      cdiApiServerImage: quay.io/kubevirt/cdi-apiserver:v1.63.0
+      cdiClonerImage: quay.io/kubevirt/cdi-cloner:v1.63.0
+      cdiControllerImage: quay.io/kubevirt/cdi-controller:v1.63.0
+      cdiImporterImage: quay.io/kubevirt/cdi-importer:v1.63.0
+      cdiOperatorImage: quay.io/kubevirt/cdi-operator:v1.63.0
+      cdiUploadProxyImage: quay.io/kubevirt/cdi-uploadproxy:v1.63.0
+      cdiUploadServerImage: quay.io/kubevirt/cdi-uploadserver:v1.63.0
   replicas: 1
   resources:
     requests:
@@ -62,19 +59,19 @@ kubevirt:
     metricsPort: 8443
     webhooksPort: 8444
   featureGates:
-  - Snapshot
+    - Snapshot
   imagePullSecrets: default-registry-key
   images:
     tags:
-      virtApiImage: quay.io/kubevirt/virt-api:v1.5.0
-      virtControllerImage: quay.io/kubevirt/virt-controller:v1.5.0
-      virtCtlImage: docker.io/starlingx/stx-kubevirt-app:stx.11.0-v1.5.0
-      virtHandlerImage: quay.io/kubevirt/virt-handler:v1.5.0
-      virtLauncherImage: quay.io/kubevirt/virt-launcher:v1.5.0
-      virtOperatorImage: quay.io/kubevirt/virt-operator:v1.5.0
+      virtApiImage: quay.io/kubevirt/virt-api:v1.5.1
+      virtControllerImage: quay.io/kubevirt/virt-controller:v1.5.1
+      virtCtlImage: docker.io/starlingx/stx-kubevirt-app:stx.12.0-v1.5.1
+      virtHandlerImage: quay.io/kubevirt/virt-handler:v1.5.1
+      virtLauncherImage: quay.io/kubevirt/virt-launcher:v1.5.1
+      virtOperatorImage: quay.io/kubevirt/virt-operator:v1.5.1
   readinessProbePort: 8443
   replicas: 1
   resources:
     requests:
       memory: 400Mi
-  version: v1.5.0
+  version: v1.5.1

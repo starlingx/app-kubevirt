@@ -1,13 +1,13 @@
-# Copyright (c) 2025 Wind River Systems, Inc.
-#
 # SPDX-License-Identifier: Apache-2.0
 #
-#    - Auto Updated Contents 2025-04-11 18:08:12 -
-
----
+# Copyright (c) 2022-2023, 2025-2026 Wind River Systems, Inc.
+#
+#
+# All Rights Reserved.
+#    - Auto Updated Contents 2025-12-26 14:49:07 -
 apiVersion: v2
-appVersion: 1.5.0
+appVersion: 1.5.1
 description: A Helm chart for KubeVirt
 name: kubevirt-app
 type: application
-version: 1.5.0
+version: 1.5.1
