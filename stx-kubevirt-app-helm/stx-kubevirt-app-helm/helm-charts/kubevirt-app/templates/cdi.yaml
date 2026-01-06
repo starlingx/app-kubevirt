@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copyright (c) 2024 Wind River Systems, Inc.
+# Copyright (c) 2025 Wind River Systems, Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -28,6 +28,9 @@ spec:
     ca:
       duration: {{ .Values.cdi.certificateRotate.ca.duration }}
       renewBefore: {{ .Values.cdi.certificateRotate.ca.renewBefore }}
+    client:
+      duration: {{ .Values.cdi.certificateRotate.client.duration }}
+      renewBefore: {{ .Values.cdi.certificateRotate.client.renewBefore }}
     server:
       duration: {{ .Values.cdi.certificateRotate.server.duration }}
       renewBefore: {{ .Values.cdi.certificateRotate.server.renewBefore }}

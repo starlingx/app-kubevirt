@@ -26,12 +26,14 @@ class KubeVirtHelm(base.FluxCDBaseHelm):
     SERVICE_NAME = 'kubevirt'
 
     SUPPORTED_NAMESPACES = base.BaseHelm.SUPPORTED_NAMESPACES + \
-        [app_constants.HELM_NS_KUBEVIRT] + [app_constants.HELM_NS_CDI]
+        [app_constants.HELM_NS_KUBEVIRT] + [app_constants.HELM_NS_CDI] + \
+        [app_constants.HELM_RELEASE_NS]
 
     SUPPORTED_APP_NAMESPACES = {
         app_constants.HELM_APP_KUBEVIRT:
-            base.BaseHelm.SUPPORTED_NAMESPACES + [
-                app_constants.HELM_NS_KUBEVIRT] + [app_constants.HELM_NS_CDI],
+            base.BaseHelm.SUPPORTED_NAMESPACES + [app_constants.HELM_RELEASE_NS] +
+            [app_constants.HELM_CHART_KUBEVIRT] + [app_constants.HELM_NS_CDI],
+
     }
 
     def get_namespaces(self):
@@ -45,6 +47,7 @@ class KubeVirtHelm(base.FluxCDBaseHelm):
         :return: Application overrides.
         """
         overrides = {
+            app_constants.HELM_RELEASE_NS: {},
             app_constants.HELM_CHART_KUBEVIRT: {
                 'featureGates': ['Snapshot'],
                 'useEmulation': utils.is_virtual(),
@@ -76,6 +79,10 @@ class KubeVirtHelm(base.FluxCDBaseHelm):
                     'server': {
                         'duration': app_constants.CDI_CERTIFICATE_ROTATE_SERVER_DURATION,
                         'renewBefore': app_constants.CDI_CERTIFICATE_ROTATE_SERVER_RENEW_BEFORE,
+                    },
+                    'client': {
+                        'duration': app_constants.CDI_CERTIFICATE_ROTATE_CLIENT_DURATION,
+                        'renewBefore': app_constants.CDI_CERTIFICATE_ROTATE_CLIENT_RENEW_BEFORE,
                     }
                 }
             }

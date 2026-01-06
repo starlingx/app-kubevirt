@@ -1,17 +1,25 @@
-# Copyright (c) 2024 Wind River Systems, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Copyright (c) 2025 Wind River Systems, Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
 #
+#
+#
 
-# Default values for kubevirt-app.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+# Helm Values file for KubeVirt v1.5.0 and CDI v1.62.0
 ---
-
-# KubeVirt v1.1.0 configuration
-kubevirt:
-  replicas: 1
-  componentType: "platform"
+cdi:
   certificateRotate:
     ca:
       duration: 1440h
@@ -19,54 +27,54 @@ kubevirt:
     server:
       duration: 1440h
       renewBefore: 720h
+    client:
+      duration: 1440h
+      renewBefore: 720h
+  componentType: platform
+  containerPorts:
+    metricsPort: 8080
   featureGates:
-    - Snapshot
+  - HonorWaitForFirstConsumer
+  imagePullSecrets: default-registry-key
   images:
     tags:
-      virtCtlImage: docker.io/starlingx/stx-kubevirt-app:stx.8.0-v1.1.0
-      virtOperatorImage: quay.io/kubevirt/virt-operator:v1.1.0
-      virtControllerImage: quay.io/kubevirt/virt-controller:v1.1.0
-      virtLauncherImage: quay.io/kubevirt/virt-launcher:v1.1.0
-      virtHandlerImage: quay.io/kubevirt/virt-handler:v1.1.0
-      virtApiImage: quay.io/kubevirt/virt-api:v1.1.0
-  version: "v1.1.0"
-  imagePullSecrets: default-registry-key
+      cdiApiServerImage: quay.io/kubevirt/cdi-apiserver:v1.62.0
+      cdiClonerImage: quay.io/kubevirt/cdi-cloner:v1.62.0
+      cdiControllerImage: quay.io/kubevirt/cdi-controller:v1.62.0
+      cdiImporterImage: quay.io/kubevirt/cdi-importer:v1.62.0
+      cdiOperatorImage: quay.io/kubevirt/cdi-operator:v1.62.0
+      cdiUploadProxyImage: quay.io/kubevirt/cdi-uploadproxy:v1.62.0
+      cdiUploadServerImage: quay.io/kubevirt/cdi-uploadserver:v1.62.0
+  replicas: 1
   resources:
     requests:
-      # This value for memory come from the upstream yaml
-      memory: 400Mi
+      memory: 150Mi
+kubevirt:
+  certificateRotate:
+    ca:
+      duration: 1440h
+      renewBefore: 720h
+    server:
+      duration: 1440h
+      renewBefore: 720h
+  componentType: platform
   containerPorts:
     metricsPort: 8443
     webhooksPort: 8444
-  readinessProbePort: 8443
-
-
-# CDI v1.58.0 (Containerized Data Importer) configuration
-cdi:
-  replicas: 1
-  componentType: "platform"
-  certificateRotate:
-    ca:
-      duration: 1440h
-      renewBefore: 720h
-    server:
-      duration: 1440h
-      renewBefore: 720h
   featureGates:
-    - HonorWaitForFirstConsumer
+  - Snapshot
+  imagePullSecrets: default-registry-key
   images:
     tags:
-      cdiOperatorImage: quay.io/kubevirt/cdi-operator:v1.58.0
-      cdiControlerImage: quay.io/kubevirt/cdi-controller:v1.58.0
-      cdiImporterImage: quay.io/kubevirt/cdi-importer:v1.58.0
-      cdiClonerImage: quay.io/kubevirt/cdi-cloner:v1.58.0
-      cdiApiServerImage: quay.io/kubevirt/cdi-apiserver:v1.58.0
-      cdiUploadServerImage: quay.io/kubevirt/cdi-uploadserver:v1.58.0
-      cdiUploadProxyImage: quay.io/kubevirt/cdi-uploadproxy:v1.58.0
-  imagePullSecrets: default-registry-key
+      virtApiImage: quay.io/kubevirt/virt-api:v1.5.0
+      virtControllerImage: quay.io/kubevirt/virt-controller:v1.5.0
+      virtCtlImage: docker.io/starlingx/stx-kubevirt-app:stx.11.0-v1.5.0
+      virtHandlerImage: quay.io/kubevirt/virt-handler:v1.5.0
+      virtLauncherImage: quay.io/kubevirt/virt-launcher:v1.5.0
+      virtOperatorImage: quay.io/kubevirt/virt-operator:v1.5.0
+  readinessProbePort: 8443
+  replicas: 1
   resources:
     requests:
-      # The values for memory comes from the upstream yaml
-      memory: 150Mi
-  containerPorts:
-    metricsPort: 8080
+      memory: 400Mi
+  version: v1.5.0
