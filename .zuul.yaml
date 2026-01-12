@@ -27,7 +27,6 @@
       - starlingx/config
       - starlingx/fault
       - starlingx/root
-      - starlingx/update
       - starlingx/utilities
     files:
       - python3-k8sapp-kubevirt/*
@@ -57,7 +56,6 @@
       - starlingx/config
       - starlingx/fault
       - starlingx/root
-      - starlingx/update
       - starlingx/utilities
     nodeset: debian-bullseye
     vars:
@@ -74,7 +72,6 @@
       - starlingx/config
       - starlingx/fault
       - starlingx/root
-      - starlingx/update
       - starlingx/utilities
     nodeset: debian-bullseye
     files:
