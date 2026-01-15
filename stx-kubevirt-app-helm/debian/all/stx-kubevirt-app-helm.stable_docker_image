@@ -1,4 +1,4 @@
 BUILDER=docker
 LABEL=stx-kubevirt-app
-DOCKER_CONTEXT=../docker
+DOCKER_CONTEXT=../../docker
 DOCKER_FILE=../../docker/Dockerfile
