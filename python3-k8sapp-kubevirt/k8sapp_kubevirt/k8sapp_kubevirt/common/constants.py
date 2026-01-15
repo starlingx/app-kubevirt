@@ -1,11 +1,10 @@
-# Copyright (c) 2025 Wind River Systems, Inc.
-#
 # SPDX-License-Identifier: Apache-2.0
 #
-# All Rights Reserved.
+# Copyright (c) 2022-2026 Wind River Systems, Inc.
 #
-#    - Auto Updated Contents 2025-04-11 18:08:12 -
-
+#
+# All Rights Reserved.
+#    - Auto Updated Contents 2025-12-26 14:49:07 -
 """  Kubevirt application predefined constants """
 
 HELM_APP_KUBEVIRT = 'kubevirt-app'
@@ -29,7 +28,7 @@ HELM_NS_CDI = 'cdi'
 HELM_RELEASE_NS = 'kube-system'
 
 HELM_VIRTCTL_DIR = '/var/opt/kubevirt/'
-HELM_VIRTCTL_FILE_NAME = 'virtctl-v1.5.0-linux-amd64'
+HELM_VIRTCTL_FILE_NAME = 'virtctl-v1.5.1-linux-amd64'
 HELM_VIRTCTL_LINK_NAME = 'virtctl'
 HELM_VIRTCTL_PATH = HELM_VIRTCTL_DIR + HELM_VIRTCTL_FILE_NAME
 HELM_VIRTCTL_LINK_PATH = HELM_VIRTCTL_DIR + HELM_VIRTCTL_LINK_NAME
