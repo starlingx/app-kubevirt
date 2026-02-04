@@ -39,6 +39,7 @@ spec:
     developerConfiguration:
       featureGates: {{ toJson (.Values.kubevirt.featureGates | default (list)) }}
       useEmulation: {{ .Values.kubevirt.useEmulation }}
+    imagePullPolicy: IfNotPresent
   customizeComponents: {}
   imagePullPolicy: IfNotPresent
   imagePullSecrets:

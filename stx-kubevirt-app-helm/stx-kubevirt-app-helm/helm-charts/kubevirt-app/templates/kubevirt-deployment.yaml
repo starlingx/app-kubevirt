@@ -42,10 +42,26 @@ spec:
       labels:
         kubevirt.io: virt-operator
         name: virt-operator
+        np.kubevirt.io/allow-access-cluster-services: "true"
         prometheus.kubevirt.io: "true"
       name: virt-operator
     spec:
       affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - preference:
+              matchExpressions:
+              - key: node-role.kubernetes.io/worker
+                operator: DoesNotExist
+            weight: 100
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: Exists
+            - matchExpressions:
+              - key: node-role.kubernetes.io/master
+                operator: Exists
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
           - podAffinityTerm:
@@ -73,9 +89,16 @@ spec:
             fieldRef:
               fieldPath: metadata.annotations['olm.targetNamespaces']
         - name: KUBEVIRT_VERSION
-          value: v1.5.1
+          value: v1.7.0
         image: {{ .Values.kubevirt.images.tags.virtOperatorImage }}
         imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 8443
+            scheme: HTTPS
+          initialDelaySeconds: 5
+          timeoutSeconds: 10
         name: virt-operator
         ports:
         - containerPort: {{ .Values.kubevirt.containerPorts.metricsPort }}
@@ -101,6 +124,7 @@ spec:
             - ALL
           seccompProfile:
             type: RuntimeDefault
+        terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /etc/virt-operator/certificates
           name: kubevirt-operator-certs
@@ -120,6 +144,12 @@ spec:
       serviceAccountName: kubevirt-operator
       tolerations:
       - key: CriticalAddonsOnly
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
         operator: Exists
       - effect: NoSchedule
         key: node-role.kubernetes.io/control-plane

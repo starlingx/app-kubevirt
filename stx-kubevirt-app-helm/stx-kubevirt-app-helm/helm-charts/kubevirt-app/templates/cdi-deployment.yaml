@@ -27,6 +27,7 @@ metadata:
   labels:
     cdi.kubevirt.io: cdi-operator
     name: cdi-operator
+    np.kubevirt.io/allow-access-cluster-services: "true"
     operator.cdi.kubevirt.io: ""
     prometheus.cdi.kubevirt.io: "true"
   name: cdi-operator
@@ -45,6 +46,7 @@ spec:
       labels:
         cdi.kubevirt.io: cdi-operator
         name: cdi-operator
+        np.kubevirt.io/allow-access-cluster-services: "true"
         operator.cdi.kubevirt.io: ""
         prometheus.cdi.kubevirt.io: "true"
     spec:
@@ -65,7 +67,7 @@ spec:
         - name: DEPLOY_CLUSTER_RESOURCES
           value: "true"
         - name: OPERATOR_VERSION
-          value: v1.63.0
+          value: v1.64.0
         - name: CONTROLLER_IMAGE
           value: {{ .Values.cdi.images.tags.cdiControllerImage }}
         - name: IMPORTER_IMAGE
@@ -87,11 +89,28 @@ spec:
         - name: MONITORING_NAMESPACE
         image: {{ .Values.cdi.images.tags.cdiOperatorImage }}
         imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8444
+            scheme: HTTP
+          initialDelaySeconds: 5
+          timeoutSeconds: 10
         name: cdi-operator
         ports:
         - containerPort: {{ .Values.cdi.containerPorts.metricsPort }}
           name: metrics
           protocol: TCP
+        - containerPort: 8444
+          name: health
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8444
+            scheme: HTTP
+          initialDelaySeconds: 5
+          timeoutSeconds: 10
         resources:
           requests:
             memory: {{ .Values.cdi.resources.requests.memory }}
@@ -114,8 +133,6 @@ spec:
         runAsNonRoot: true
       serviceAccountName: cdi-operator
       tolerations:
-      - key: CriticalAddonsOnly
-        operator: Exists
       - effect: NoSchedule
         key: node-role.kubernetes.io/control-plane
         operator: Exists
