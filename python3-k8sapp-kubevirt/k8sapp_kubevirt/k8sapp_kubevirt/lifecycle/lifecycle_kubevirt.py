@@ -51,7 +51,9 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
              LifecycleConstants.APP_LIFECYCLE_TIMING_PRE): lambda: self.pre_remove(app),
             (LifecycleConstants.APP_LIFECYCLE_TYPE_OPERATION, constants.APP_REMOVE_OP,
              LifecycleConstants.APP_LIFECYCLE_TIMING_POST): (
-                lambda: self.post_remove())  # pylint: disable=unnecessary-lambda
+                lambda: self.post_remove()),  # pylint: disable=unnecessary-lambda
+            (LifecycleConstants.APP_LIFECYCLE_TYPE_RESOURCE, constants.APP_DOWNGRADE_OP,
+             LifecycleConstants.APP_LIFECYCLE_TIMING_PRE): lambda: self.pre_downgrade(hook_info),
         }
 
         # Get the appropriate lifecylce function from the dictionary based on the values
@@ -70,6 +72,67 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
 
         self.update_namespace_override(app_op, app, app_constants.HELM_NS_KUBEVIRT)
         self.update_namespace_override(app_op, app, app_constants.HELM_NS_CDI)
+
+    def pre_downgrade(self, hook_info):
+        """Block kubevirt-app downgrade if VMs are running.
+
+        Ghost record checkpoint files written by a newer virt-handler may use
+        normalized socket paths (filepath.Clean). An older virt-handler that
+        lacks this normalization will fail the raw string comparison in
+        AddGhostRecord, entering a repeated re-enqueue loop that prevents it
+        from managing any VM. See https://github.com/kubevirt/kubevirt/issues/17137
+
+        :param hook_info: LifecycleHookInfo object with extra dict containing
+                          FROM_APP_VERSION and TO_APP_VERSION
+        :raises exception.ApplicationLifecyclePreActionAbort: if active VMIs exist
+        """
+        from_version = hook_info.extra.get(
+            LifecycleConstants.FROM_APP_VERSION, 'unknown')
+        to_version = hook_info.extra.get(
+            LifecycleConstants.TO_APP_VERSION, 'unknown')
+
+        LOG.info(f"Pre-downgrade check for {app_constants.HELM_APP_KUBEVIRT}: "
+                 f"{from_version} -> {to_version}")
+
+        active_vmis = self._get_active_vmis()
+        if active_vmis:
+            msg = (f"Cannot downgrade {app_constants.HELM_APP_KUBEVIRT} from "
+                   f"{from_version} to {to_version} while VMs are running. "
+                   f"Active VMIs: {', '.join(active_vmis)}. "
+                   f"Stop all VMs first (virtctl stop <vm> -n <namespace>), "
+                   f"then retry the downgrade.")
+            LOG.error(msg)
+            raise RuntimeError(msg)
+
+        LOG.info(f"Pre-downgrade check passed: no active VMIs found, "
+                 f"proceeding with downgrade to {to_version}")
+
+    def _get_active_vmis(self):
+        """Query Kubernetes for VMIs in active phases.
+
+        :return: list of 'namespace/name' strings for active VMIs
+        """
+        active_phases = ('Running', 'Scheduling', 'Scheduled')
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'get', 'vmi', '--all-namespaces',
+            '-o', 'jsonpath={range .items[*]}{.metadata.namespace}/'
+                  '{.metadata.name}={.status.phase}{\"\\n\"}{end}'
+        ]
+        stdout, _stderr = cutils.trycmd(*cmd)
+        if not stdout or not stdout.strip():
+            return []
+
+        active = []
+        for line in stdout.strip().split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+            if '=' in line:
+                name, phase = line.rsplit('=', 1)
+                if phase in active_phases:
+                    active.append(name)
+        return active
 
     def update_namespace_override(self, app_op, app, namespace):
         """Update the namespace override based on Helm chart user overrides.
