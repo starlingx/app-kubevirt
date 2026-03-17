@@ -540,6 +540,26 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
             LOG.debug(f"{app.name} app: cleaned namespace {namespace}: "
                       f"stdout={stdout} stderr={stderr}")
 
+        # Step 10: Delete orphaned HelmChart in kube-system
+        # The HelmChart object lives in kube-system, not in the kubevirt/cdi
+        # namespaces cleaned above. Because FluxCD reconciliation was suspended
+        # in Step 2, the framework cannot delete it via 'kubectl delete -k',
+        # leaving it orphaned. Delete it explicitly.
+        LOG.debug(f"{app.name} app: Deleting orphaned HelmChart in "
+                  f"{app_constants.HELM_RELEASE_NS}")
+        helmchart_name = (f"{app_constants.HELM_RELEASE_NS}-"
+                          f"{app_constants.HELM_APP_KUBEVIRT}")
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'delete', 'helmchart', helmchart_name,
+            '-n', app_constants.HELM_RELEASE_NS,
+            '--ignore-not-found=true', '--timeout=30s',
+            '--request-timeout=30s'
+        ]
+        stdout, stderr = cutils.trycmd(*cmd)
+        LOG.debug(f"{app.name} app: deleted HelmChart {helmchart_name}: "
+                  f"stdout={stdout} stderr={stderr}")
+
         LOG.debug(f"{app.name} app: pre_remove comprehensive cleanup "
                   "completed")
 
