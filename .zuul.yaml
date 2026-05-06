@@ -9,6 +9,14 @@
         - k8sapp-kubevirt-tox-flake8
         - k8sapp-kubevirt-tox-pylint
         - k8sapp-kubevirt-tox-metadata
+        - k8sapp-kubevirt-tox-coverage
+        - k8sapp-kubevirt-tox-bandit
+        - k8sapp-kubevirt-tox-bandit-trixie
+        - k8sapp-kubevirt-tox-py313
+        - k8sapp-kubevirt-tox-flake8-trixie
+        - k8sapp-kubevirt-tox-pylint-trixie
+        - k8sapp-kubevirt-tox-metadata-trixie
+        - k8sapp-kubevirt-tox-coverage-trixie
     gate:
       jobs:
         - openstack-tox-linters
@@ -16,6 +24,14 @@
         - k8sapp-kubevirt-tox-flake8
         - k8sapp-kubevirt-tox-pylint
         - k8sapp-kubevirt-tox-metadata
+        - k8sapp-kubevirt-tox-coverage
+        - k8sapp-kubevirt-tox-bandit
+        - k8sapp-kubevirt-tox-bandit-trixie
+        - k8sapp-kubevirt-tox-py313
+        - k8sapp-kubevirt-tox-flake8-trixie
+        - k8sapp-kubevirt-tox-pylint-trixie
+        - k8sapp-kubevirt-tox-metadata-trixie
+        - k8sapp-kubevirt-tox-coverage-trixie
 
     post:
       jobs:
@@ -96,6 +112,21 @@
     vars:
         tox_envlist: bandit
         tox_extra_args: -c python3-k8sapp-kubevirt/k8sapp_kubevirt/tox.ini
+
+- job:
+    name: k8sapp-kubevirt-tox-bandit-trixie
+    parent: tox
+    description: |
+      Run bandit for kubevirt (trixie)
+    nodeset: debian-trixie-8GB
+    required-projects:
+      - starlingx/root
+    files:
+      - python3-k8sapp-kubevirt/*
+    vars:
+      tox_envlist: bandit-trixie
+      tox_extra_args: -c python3-k8sapp-kubevirt/k8sapp_kubevirt/tox.ini
+      tox_constraints_file: '{{ ansible_user_dir }}/src/opendev.org/starlingx/root/build-tools/requirements/debian/trixie/upper-constraints.txt'
 
 - job:
     name: stx-app-kubevirt-upload-git-mirror
@@ -188,3 +219,107 @@
           /ocDeDtoN3o/fP4WLWN9fwuumK2hlWDzr0YydDiuwbW2v3M33VZ+P8GtDKD8arF3MAk+c
           8tcZz8nR2+pTQ2pTxddFWoKIdHCYZRiATyeBRIK+FCFKrxLjvNitF/Qvn4sI5MiwpBb+i
           wNBnCvk7DsG5DVYwU0QeZlTLoVmwZ1FFc5IqntPMhVWpDrbyJ3FuCvDrR5anW8=
+
+- job:
+    name: k8sapp-kubevirt-tox-coverage
+    parent: tox
+    description: |
+      Run all tests with coverage analysis for kubevirt app
+    nodeset: debian-bullseye
+    required-projects:
+      - starlingx/config
+      - starlingx/fault
+      - starlingx/root
+      - starlingx/utilities
+    files:
+      - python3-k8sapp-kubevirt/*
+    vars:
+      tox_envlist: coverage
+      tox_extra_args: -c python3-k8sapp-kubevirt/k8sapp_kubevirt/tox.ini
+      tox_constraints_file: '{{ ansible_user_dir }}/src/opendev.org/starlingx/root/build-tools/requirements/debian/upper-constraints.txt'
+    post-run: python3-k8sapp-kubevirt/k8sapp_kubevirt/k8sapp_kubevirt/tests/playbooks/upload-coverage-reports.yaml
+
+- job:
+    name: k8sapp-kubevirt-tox-py313
+    parent: tox
+    description: |
+      Run py313 for kubevirt app
+    nodeset: debian-trixie-8GB
+    required-projects:
+      - starlingx/config
+      - starlingx/fault
+      - starlingx/root
+      - starlingx/utilities
+    files:
+      - python3-k8sapp-kubevirt/*
+    vars:
+      tox_envlist: py313
+      tox_extra_args: -c python3-k8sapp-kubevirt/k8sapp_kubevirt/tox.ini
+      tox_constraints_file: '{{ ansible_user_dir }}/src/opendev.org/starlingx/root/build-tools/requirements/debian/trixie/upper-constraints.txt'
+
+- job:
+    name: k8sapp-kubevirt-tox-flake8-trixie
+    parent: tox
+    description: |
+      Run flake8-trixie for kubevirt
+    nodeset: debian-trixie-8GB
+    files:
+      - python3-k8sapp-kubevirt/*
+    vars:
+      tox_envlist: flake8-trixie
+      tox_extra_args: -c python3-k8sapp-kubevirt/k8sapp_kubevirt/tox.ini
+
+- job:
+    name: k8sapp-kubevirt-tox-pylint-trixie
+    parent: tox
+    description: |
+      Run pylint-trixie test for k8sapp_kubevirt
+    nodeset: debian-trixie-8GB
+    required-projects:
+      - starlingx/config
+      - starlingx/fault
+      - starlingx/root
+      - starlingx/utilities
+    files:
+      - python3-k8sapp-kubevirt/*
+    vars:
+      tox_envlist: pylint-trixie
+      tox_extra_args: -c python3-k8sapp-kubevirt/k8sapp_kubevirt/tox.ini
+      tox_constraints_file: '{{ ansible_user_dir }}/src/opendev.org/starlingx/root/build-tools/requirements/debian/trixie/upper-constraints.txt'
+
+- job:
+    name: k8sapp-kubevirt-tox-metadata-trixie
+    parent: tox
+    description: |
+      Run metadata-trixie test for k8sapp_kubevirt
+    nodeset: debian-trixie-8GB
+    required-projects:
+      - starlingx/config
+      - starlingx/fault
+      - starlingx/root
+      - starlingx/utilities
+    vars:
+      tox_envlist: metadata-trixie
+      tox_extra_args: -c python3-k8sapp-kubevirt/k8sapp_kubevirt/tox.ini
+      tox_constraints_file: '{{ ansible_user_dir }}/src/opendev.org/starlingx/root/build-tools/requirements/debian/trixie/upper-constraints.txt'
+
+- job:
+    name: k8sapp-kubevirt-tox-coverage-trixie
+    parent: tox
+    description: |
+      Run all tests with coverage analysis for kubevirt app (trixie)
+    nodeset: debian-trixie-8GB
+    required-projects:
+      - starlingx/config
+      - starlingx/fault
+      - starlingx/root
+      - starlingx/utilities
+    files:
+      - python3-k8sapp-kubevirt/*
+    vars:
+      tox_envlist: coverage-trixie
+      tox_extra_args: -c python3-k8sapp-kubevirt/k8sapp_kubevirt/tox.ini
+      tox_constraints_file: '{{ ansible_user_dir }}/src/opendev.org/starlingx/root/build-tools/requirements/debian/trixie/upper-constraints.txt'
+    post-run: python3-k8sapp-kubevirt/k8sapp_kubevirt/k8sapp_kubevirt/tests/playbooks/upload-coverage-reports.yaml
+
+
