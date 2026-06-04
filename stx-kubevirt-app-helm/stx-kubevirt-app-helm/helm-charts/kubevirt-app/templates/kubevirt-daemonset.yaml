@@ -42,7 +42,7 @@ spec:
           mkdir -p /var/opt/kubevirt/; \
           mv /virtctl-{{ .Values.kubevirt.version }}-linux-amd64 /var/opt/kubevirt/; \
           chmod 755 /var/opt/kubevirt/; \
-          cp -sf /var/opt/kubevirt/virtctl-{{ .Values.kubevirt.version }}-linux-amd64 /var/opt/kubevirt/virtctl; \
+          cp -sf /var/opt/kubevirt/virtctl-{{ .Values.kubevirt.version }}-linux-amd64 /home/sysadmin/bin/virtctl; \
           sleep infinity
         command:
         - /bin/sh
@@ -52,6 +52,8 @@ spec:
         volumeMounts:
         - mountPath: /var/opt/
           name: controller-dir
+        - mountPath: /home/sysadmin/bin/
+          name: sysadmin-bin
       imagePullSecrets:
       - name: default-registry-key
       nodeSelector:
@@ -71,3 +73,7 @@ spec:
           path: /var/opt
           type: Directory
         name: controller-dir
+      - hostPath:
+          path: /home/sysadmin/bin
+          type: DirectoryOrCreate
+        name: sysadmin-bin

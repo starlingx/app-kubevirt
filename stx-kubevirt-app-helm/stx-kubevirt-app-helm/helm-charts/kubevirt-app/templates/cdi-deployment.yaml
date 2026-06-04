@@ -67,7 +67,7 @@ spec:
         - name: DEPLOY_CLUSTER_RESOURCES
           value: "true"
         - name: OPERATOR_VERSION
-          value: v1.64.0
+          value: v1.65.0
         - name: CONTROLLER_IMAGE
           value: {{ .Values.cdi.images.tags.cdiControllerImage }}
         - name: IMPORTER_IMAGE

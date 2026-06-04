@@ -4,8 +4,8 @@
 #
 #
 # All Rights Reserved.
-#    - Auto Updated Contents 2026-02-04 13:05:31 -
+#    - Auto Updated Contents 2026-06-04 15:56:18 -
 ARG BASE
 FROM ${BASE}
-ADD https://github.com/kubevirt/kubevirt/releases/download/v1.7.0/virtctl-v1.7.0-linux-amd64 .
-RUN chmod a+rwx ./virtctl-v1.7.0-linux-amd64
+ADD https://github.com/kubevirt/kubevirt/releases/download/v1.8.2/virtctl-v1.8.2-linux-amd64 .
+RUN chmod a+rwx ./virtctl-v1.8.2-linux-amd64

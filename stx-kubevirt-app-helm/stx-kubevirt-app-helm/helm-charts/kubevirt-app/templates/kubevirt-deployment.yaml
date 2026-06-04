@@ -89,7 +89,7 @@ spec:
             fieldRef:
               fieldPath: metadata.annotations['olm.targetNamespaces']
         - name: KUBEVIRT_VERSION
-          value: v1.7.0
+          value: v1.8.2
         image: {{ .Values.kubevirt.images.tags.virtOperatorImage }}
         imagePullPolicy: IfNotPresent
         livenessProbe:

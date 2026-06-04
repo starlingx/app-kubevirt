@@ -4,10 +4,10 @@
 #
 #
 # All Rights Reserved.
-#    - Auto Updated Contents 2026-02-04 13:05:31 -
+#    - Auto Updated Contents 2026-06-04 15:56:18 -
 apiVersion: v2
-appVersion: 1.7.0
+appVersion: 1.8.2
 description: A Helm chart for KubeVirt
 name: kubevirt-app
 type: application
-version: 1.7.0
+version: 1.8.2

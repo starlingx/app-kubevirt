@@ -4,7 +4,7 @@
 #
 #
 # All Rights Reserved.
-#    - Auto Updated Contents 2026-02-04 13:05:31 -
+#    - Auto Updated Contents 2026-06-04 15:56:18 -
 """  Kubevirt application predefined constants """
 
 HELM_APP_KUBEVIRT = 'kubevirt-app'
@@ -28,10 +28,11 @@ HELM_NS_CDI = 'cdi'
 HELM_RELEASE_NS = 'kube-system'
 
 HELM_VIRTCTL_DIR = '/var/opt/kubevirt/'
-HELM_VIRTCTL_FILE_NAME = 'virtctl-v1.7.0-linux-amd64'
+HELM_VIRTCTL_FILE_NAME = 'virtctl-v1.8.2-linux-amd64'
 HELM_VIRTCTL_LINK_NAME = 'virtctl'
 HELM_VIRTCTL_PATH = HELM_VIRTCTL_DIR + HELM_VIRTCTL_FILE_NAME
-HELM_VIRTCTL_LINK_PATH = HELM_VIRTCTL_DIR + HELM_VIRTCTL_LINK_NAME
+HELM_VIRTCTL_BIN_DIR = '/home/sysadmin/bin/'
+HELM_VIRTCTL_LINK_PATH = HELM_VIRTCTL_BIN_DIR + HELM_VIRTCTL_LINK_NAME
 
 CDI_CERTIFICATE_ROTATE_CA_DURATION = '1440h'
 CDI_CERTIFICATE_ROTATE_CA_RENEW_BEFORE = '720h'
