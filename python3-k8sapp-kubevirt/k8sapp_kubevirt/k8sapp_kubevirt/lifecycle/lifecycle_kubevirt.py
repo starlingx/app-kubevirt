@@ -278,6 +278,11 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
         7. Force delete all kubevirt/cdi CRDs regardless of management
         8. Clean up all kubevirt/cdi APIServices
         9. Clean namespaces while preserving namespace objects
+        10. Delete orphaned virt-launcher pods in all namespaces
+        11. Delete virt-operator managed cluster-scoped resources
+        12. Delete Helm-managed cluster-scoped resources
+        13. Delete RoleBindings in kube-system
+        14. Delete orphaned HelmChart in kube-system
 
         :param app: The application object.
         """
@@ -373,7 +378,7 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
         # Also delete specific webhook configurations that cause validation
         LOG.debug(f"{app.name} app: Deleting specific webhook configurations")
         webhook_configs = ['virt-api-validator', 'virt-operator-validator',
-                           'cdi-api-datavolume-validate']
+                           'cdi-api-datavolume-validate', 'virt-api-mutator']
         for config in webhook_configs:
             cmd = [
                 'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
@@ -540,7 +545,72 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
             LOG.debug(f"{app.name} app: cleaned namespace {namespace}: "
                       f"stdout={stdout} stderr={stderr}")
 
-        # Step 10: Delete orphaned HelmChart in kube-system
+        # Step 10: Delete orphaned virt-launcher pods in all namespaces
+        LOG.debug(f"{app.name} app: Deleting virt-launcher pods")
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'delete', 'pod', '--all-namespaces',
+            '-l', 'kubevirt.io/domain',
+            '--force', '--grace-period=0'
+        ]
+        stdout, stderr = cutils.trycmd(*cmd)
+        LOG.debug(f"{app.name} app: deleted virt-launcher pods: "
+                  f"stdout={stdout} stderr={stderr}")
+
+        # Step 11: Delete virt-operator managed cluster-scoped resources
+        LOG.debug(f"{app.name} app: Deleting virt-operator managed resources")
+        virt_operator_resources = [
+            'clusterrole',
+            'clusterrolebinding',
+            'mutatingwebhookconfiguration',
+            'validatingadmissionpolicy',
+            'validatingadmissionpolicybinding',
+        ]
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'delete', ','.join(virt_operator_resources),
+            '-l', 'app.kubernetes.io/managed-by=virt-operator',
+            '--ignore-not-found=true'
+        ]
+        stdout, stderr = cutils.trycmd(*cmd)
+        LOG.debug(f"{app.name} app: deleted virt-operator resources: "
+                  f"stdout={stdout} stderr={stderr}")
+
+        # Step 12: Delete Helm-managed cluster-scoped resources
+        LOG.debug(f"{app.name} app: Deleting Helm-managed cluster-scoped "
+                  "resources")
+        helm_cluster_resources = [
+            'clusterrole',
+            'clusterrolebinding',
+            'priorityclass',
+        ]
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'delete', ','.join(helm_cluster_resources),
+            '-l',
+            f'helm.toolkit.fluxcd.io/name={app_constants.HELM_APP_KUBEVIRT}',
+            '--ignore-not-found=true'
+        ]
+        stdout, stderr = cutils.trycmd(*cmd)
+        LOG.debug(f"{app.name} app: deleted Helm cluster resources: "
+                  f"stdout={stdout} stderr={stderr}")
+
+        # Step 13: Delete RoleBindings in kube-system
+        LOG.debug(f"{app.name} app: Deleting RoleBindings in "
+                  f"{app_constants.HELM_RELEASE_NS}")
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'delete', 'rolebinding',
+            '-n', app_constants.HELM_RELEASE_NS,
+            '-l',
+            f'helm.toolkit.fluxcd.io/name={app_constants.HELM_APP_KUBEVIRT}',
+            '--ignore-not-found=true'
+        ]
+        stdout, stderr = cutils.trycmd(*cmd)
+        LOG.debug(f"{app.name} app: deleted rolebindings: "
+                  f"stdout={stdout} stderr={stderr}")
+
+        # Step 14: Delete orphaned HelmChart in kube-system
         # The HelmChart object lives in kube-system, not in the kubevirt/cdi
         # namespaces cleaned above. Because FluxCD reconciliation was suspended
         # in Step 2, the framework cannot delete it via 'kubectl delete -k',
@@ -572,6 +642,18 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
         """
 
         LOG.debug(f"Executing post_remove for {app_constants.HELM_APP_KUBEVIRT} app")
+
+        # Delete Helm release secrets
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'delete', 'secret',
+            '-n', app_constants.HELM_RELEASE_NS,
+            '-l', f'name={app_constants.HELM_APP_KUBEVIRT},owner=helm',
+            '--ignore-not-found=true'
+        ]
+        stdout, stderr = cutils.trycmd(*cmd)
+        LOG.debug(f"{app_constants.HELM_APP_KUBEVIRT} app: deleted helm "
+                  f"secrets: stdout={stdout} stderr={stderr}")
 
         # Remove virtctl sym link
         if os.path.exists(app_constants.HELM_VIRTCTL_LINK_PATH):
