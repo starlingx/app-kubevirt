@@ -65,7 +65,7 @@ kubevirt:
     tags:
       virtApiImage: quay.io/kubevirt/virt-api:v1.8.2
       virtControllerImage: quay.io/kubevirt/virt-controller:v1.8.2
-      virtCtlImage: docker.io/starlingx/stx-kubevirt-app:stx.13.0-v1.8.2-1-trixie
+      virtCtlImage: docker.io/starlingx/stx-kubevirt-app:stx.13.0-v1.8.2-2-trixie
       virtHandlerImage: quay.io/kubevirt/virt-handler:v1.8.2
       virtLauncherImage: quay.io/kubevirt/virt-launcher:v1.8.2
       virtOperatorImage: quay.io/kubevirt/virt-operator:v1.8.2
