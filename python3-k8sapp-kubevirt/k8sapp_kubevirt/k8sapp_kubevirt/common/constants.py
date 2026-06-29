@@ -4,7 +4,6 @@
 #
 #
 # All Rights Reserved.
-#    - Auto Updated Contents 2026-06-04 15:56:18 -
 """  Kubevirt application predefined constants """
 
 HELM_APP_KUBEVIRT = 'kubevirt-app'

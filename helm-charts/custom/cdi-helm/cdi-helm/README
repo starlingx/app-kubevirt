@@ -1,0 +1,11 @@
+This directory contains the StarlingX helm chart for the Containerized Data
+Importer (CDI). The Helm Chart is derived from Kubernetes yaml files for CDI.
+The original sources were retrieved from:
+
+https://github.com/kubevirt/containerized-data-importer/releases/download/${VERSION}/cdi-cr.yaml
+https://github.com/kubevirt/containerized-data-importer/releases/download/${VERSION}/cdi-operator.yaml.
+
+Additional information can be found at https://kubevirt.io/.
+
+As the CDI versions are updated, maintainers of this repo will need to update
+the helm chart.

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022-2023 Wind River Systems, Inc.
+# Copyright (c) 2022-2023, 2026 Wind River Systems, Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -46,6 +46,9 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
         # Define a dictionary to map values to lifecycle functions
         action_map = {
             (LifecycleConstants.APP_LIFECYCLE_TYPE_FLUXCD_REQUEST, constants.APP_APPLY_OP,
+             LifecycleConstants.APP_LIFECYCLE_TIMING_PRE): (
+                lambda: self.pre_apply()),  # pylint: disable=unnecessary-lambda
+            (LifecycleConstants.APP_LIFECYCLE_TYPE_FLUXCD_REQUEST, constants.APP_APPLY_OP,
              LifecycleConstants.APP_LIFECYCLE_TIMING_POST): lambda: self.post_apply(app_op, app),
             (LifecycleConstants.APP_LIFECYCLE_TYPE_OPERATION, constants.APP_REMOVE_OP,
              LifecycleConstants.APP_LIFECYCLE_TIMING_PRE): lambda: self.pre_remove(app),
@@ -72,6 +75,86 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
 
         self.update_namespace_override(app_op, app, app_constants.HELM_NS_KUBEVIRT)
         self.update_namespace_override(app_op, app, app_constants.HELM_NS_CDI)
+
+        # Delete stale cdi HelmRelease only if it was suspended by
+        # pre_downgrade. A suspended HelmRelease means a downgrade occurred
+        # from the chart-split version. On fresh install or upgrade, the
+        # HelmRelease is active (not suspended), so this is a no-op.
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'get', 'helmrelease', app_constants.HELM_APP_CDI,
+            '-n', app_constants.HELM_RELEASE_NS,
+            '-o', 'jsonpath={.spec.suspend}'
+        ]
+        stdout, _ = cutils.trycmd(*cmd)
+        if stdout.strip() == 'true':
+            cmd = [
+                'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                'delete', 'helmrelease', app_constants.HELM_APP_CDI,
+                '-n', app_constants.HELM_RELEASE_NS,
+                '--ignore-not-found=true', '--timeout=30s',
+                '--request-timeout=30s'
+            ]
+            stdout, stderr = cutils.trycmd(*cmd)
+            LOG.debug(f"{app_constants.HELM_APP_KUBEVIRT} app: deleted stale "
+                      f"cdi HelmRelease: stdout={stdout} stderr={stderr}")
+
+    def _transfer_cdi_ownership(self, release_name):
+        """Transfer Helm ownership of CDI resources to the given release."""
+        LOG.info(f"{app_constants.HELM_APP_KUBEVIRT} app: Transferring CDI "
+                 f"resource ownership to {release_name}")
+
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'annotate', 'all,sa,role,rolebinding,cdi.cdi.kubevirt.io',
+            '-n', app_constants.HELM_NS_CDI,
+            f'meta.helm.sh/release-name={release_name}',
+            'helm.sh/resource-policy=keep',
+            '--overwrite', '--ignore-not-found'
+        ]
+        cutils.trycmd(*cmd)
+
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'annotate', 'clusterrole,clusterrolebinding',
+            '-l', 'operator.cdi.kubevirt.io',
+            f'meta.helm.sh/release-name={release_name}',
+            'helm.sh/resource-policy=keep',
+            '--overwrite', '--ignore-not-found'
+        ]
+        cutils.trycmd(*cmd)
+
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'annotate', 'rolebinding', 'cdi-registry-rolebinding',
+            '-n', app_constants.HELM_RELEASE_NS,
+            f'meta.helm.sh/release-name={release_name}',
+            'helm.sh/resource-policy=keep',
+            '--overwrite', '--ignore-not-found'
+        ]
+        cutils.trycmd(*cmd)
+
+    def pre_apply(self):
+        """Prepare CDI resources for chart-split upgrade.
+
+        Annotates CDI resources with:
+        - helm.sh/resource-policy: keep — prevents kubevirt-app upgrade
+          from deleting them when removed from its chart.
+        - meta.helm.sh/release-name: cdi — allows the new cdi HelmRelease
+          to adopt the existing resources.
+        """
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'get', 'deploy', 'cdi-operator',
+            '-n', app_constants.HELM_NS_CDI,
+            '-o', 'jsonpath={.metadata.annotations.meta\\.helm\\.sh/release-name}',
+            '--ignore-not-found'
+        ]
+        stdout, _ = cutils.trycmd(*cmd)
+        if stdout.strip() != app_constants.HELM_APP_KUBEVIRT:
+            return
+
+        self._transfer_cdi_ownership(app_constants.HELM_APP_CDI)
 
     def pre_downgrade(self, hook_info):
         """Block kubevirt-app downgrade if VMs are running.
@@ -103,6 +186,62 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
                    f"then retry the downgrade.")
             LOG.error(msg)
             raise RuntimeError(msg)
+
+        self._transfer_cdi_ownership(app_constants.HELM_APP_KUBEVIRT)
+
+        # Suspend the standalone cdi HelmRelease first to prevent it
+        # from recreating resources after we delete them below.
+        LOG.info(f"{app_constants.HELM_APP_KUBEVIRT} app: Suspending "
+                 f"cdi HelmRelease reconciliation")
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'patch', 'helmrelease', app_constants.HELM_APP_CDI,
+            '-n', app_constants.HELM_RELEASE_NS, '--type=merge',
+            '-p', '{"spec":{"suspend":true}}'
+        ]
+        stdout, stderr = cutils.trycmd(*cmd)
+        LOG.info(f"{app_constants.HELM_APP_KUBEVIRT} app: suspended cdi "
+                 f"HelmRelease: stdout={stdout} stderr={stderr}")
+
+        # Delete cdi-operator first and wait for termination so it cannot
+        # recreate deployments after we remove them. Then delete the rest.
+        # The 26.10 cdi chart introduces incompatible spec changes (probes,
+        # selectors) that cannot be resolved by Helm 3-way merge.
+        LOG.info(f"{app_constants.HELM_APP_KUBEVIRT} app: Deleting CDI "
+                 f"deployments for clean downgrade")
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'delete', 'deploy', 'cdi-operator',
+            '-n', app_constants.HELM_NS_CDI, '--ignore-not-found',
+            '--wait=true'
+        ]
+        cutils.trycmd(*cmd)
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'delete', 'deploy', 'cdi-apiserver',
+            'cdi-deployment', 'cdi-uploadproxy',
+            '-n', app_constants.HELM_NS_CDI, '--ignore-not-found'
+        ]
+        cutils.trycmd(*cmd)
+
+        # Clear CDI CR status so the older operator can reconcile.
+        # Without this, the operator refuses with "operator downgraded".
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'patch', 'cdis.cdi.kubevirt.io', 'cdi', '--type=json',
+            '-p', '[{"op":"replace","path":"/status/observedVersion","value":""},'
+                  '{"op":"replace","path":"/status/operatorVersion","value":""}]'
+        ]
+        cutils.trycmd(*cmd)
+
+        # Delete the cdi HelmRelease since older releases are unaware
+        # of it and would leave it orphaned in kube-system.
+        cmd = [
+            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+            'delete', 'helmrelease', app_constants.HELM_APP_CDI,
+            '-n', app_constants.HELM_RELEASE_NS, '--ignore-not-found'
+        ]
+        cutils.trycmd(*cmd)
 
         LOG.info(f"Pre-downgrade check passed: no active VMIs found, "
                  f"proceeding with downgrade to {to_version}")
@@ -202,17 +341,23 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
         :param namespace: The namespace for which Helm user overrides are needed.
         :return: Helm user overrides as a string.
         """
+        # Map namespace to the correct chart name
+        if namespace == app_constants.HELM_NS_CDI:
+            chart_name = app_constants.HELM_APP_CDI
+        else:
+            chart_name = app_constants.HELM_APP_KUBEVIRT
+
         try:
             overrides = dbapi_instance.helm_override_get(
                 app_id=db_app_id,
-                name=app_constants.HELM_APP_KUBEVIRT,
+                name=chart_name,
                 namespace=namespace,
             )
         except exception.HelmOverrideNotFound:
             values = {
-                "name": app_constants.HELM_APP_KUBEVIRT,
+                "name": chart_name,
                 "namespace": namespace,
-                "db_app_id": db_app_id,
+                "app_id": db_app_id,
             }
             overrides = dbapi_instance.helm_override_create(values=values)
         return overrides.user_overrides or ""
@@ -319,15 +464,17 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
 
         # Step 2: Suspend FluxCD reconciliation to prevent recreation
         LOG.debug(f"{app.name} app: Suspending FluxCD reconciliation")
-        cmd = [
-            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
-            'patch', 'helmrelease', app_constants.HELM_APP_KUBEVIRT,
-            '-n', 'kube-system', '--type=merge',
-            '-p', '{"spec":{"suspend":true}}'
-        ]
-        stdout, stderr = cutils.trycmd(*cmd)
-        LOG.debug(f"{app.name} app: suspended FluxCD reconciliation: "
-                  f"stdout={stdout} stderr={stderr}")
+        for release_name in [app_constants.HELM_APP_KUBEVIRT,
+                             app_constants.HELM_APP_CDI]:
+            cmd = [
+                'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                'patch', 'helmrelease', release_name,
+                '-n', 'kube-system', '--type=merge',
+                '-p', '{"spec":{"suspend":true}}'
+            ]
+            stdout, stderr = cutils.trycmd(*cmd)
+            LOG.debug(f"{app.name} app: suspended FluxCD reconciliation "
+                      f"for {release_name}: stdout={stdout} stderr={stderr}")
 
         # Step 3: Stop all workloads to prevent recreation during cleanup
         LOG.debug(f"{app.name} app: Stopping all workloads")
@@ -584,51 +731,57 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
             'clusterrolebinding',
             'priorityclass',
         ]
-        cmd = [
-            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
-            'delete', ','.join(helm_cluster_resources),
-            '-l',
-            f'helm.toolkit.fluxcd.io/name={app_constants.HELM_APP_KUBEVIRT}',
-            '--ignore-not-found=true'
-        ]
-        stdout, stderr = cutils.trycmd(*cmd)
-        LOG.debug(f"{app.name} app: deleted Helm cluster resources: "
-                  f"stdout={stdout} stderr={stderr}")
+        for release_name in [app_constants.HELM_APP_KUBEVIRT,
+                             app_constants.HELM_APP_CDI]:
+            cmd = [
+                'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                'delete', ','.join(helm_cluster_resources),
+                '-l',
+                f'helm.toolkit.fluxcd.io/name={release_name}',
+                '--ignore-not-found=true'
+            ]
+            stdout, stderr = cutils.trycmd(*cmd)
+            LOG.debug(f"{app.name} app: deleted Helm cluster resources "
+                      f"for {release_name}: stdout={stdout} stderr={stderr}")
 
         # Step 13: Delete RoleBindings in kube-system
         LOG.debug(f"{app.name} app: Deleting RoleBindings in "
                   f"{app_constants.HELM_RELEASE_NS}")
-        cmd = [
-            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
-            'delete', 'rolebinding',
-            '-n', app_constants.HELM_RELEASE_NS,
-            '-l',
-            f'helm.toolkit.fluxcd.io/name={app_constants.HELM_APP_KUBEVIRT}',
-            '--ignore-not-found=true'
-        ]
-        stdout, stderr = cutils.trycmd(*cmd)
-        LOG.debug(f"{app.name} app: deleted rolebindings: "
-                  f"stdout={stdout} stderr={stderr}")
+        for release_name in [app_constants.HELM_APP_KUBEVIRT,
+                             app_constants.HELM_APP_CDI]:
+            cmd = [
+                'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                'delete', 'rolebinding',
+                '-n', app_constants.HELM_RELEASE_NS,
+                '-l',
+                f'helm.toolkit.fluxcd.io/name={release_name}',
+                '--ignore-not-found=true'
+            ]
+            stdout, stderr = cutils.trycmd(*cmd)
+            LOG.debug(f"{app.name} app: deleted rolebindings for "
+                      f"{release_name}: stdout={stdout} stderr={stderr}")
 
-        # Step 14: Delete orphaned HelmChart in kube-system
-        # The HelmChart object lives in kube-system, not in the kubevirt/cdi
+        # Step 14: Delete orphaned HelmCharts in kube-system
+        # The HelmChart objects live in kube-system, not in the kubevirt/cdi
         # namespaces cleaned above. Because FluxCD reconciliation was suspended
-        # in Step 2, the framework cannot delete it via 'kubectl delete -k',
-        # leaving it orphaned. Delete it explicitly.
-        LOG.debug(f"{app.name} app: Deleting orphaned HelmChart in "
+        # in Step 2, the framework cannot delete them via 'kubectl delete -k',
+        # leaving them orphaned. Delete them explicitly.
+        LOG.debug(f"{app.name} app: Deleting orphaned HelmCharts in "
                   f"{app_constants.HELM_RELEASE_NS}")
-        helmchart_name = (f"{app_constants.HELM_RELEASE_NS}-"
-                          f"{app_constants.HELM_APP_KUBEVIRT}")
-        cmd = [
-            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
-            'delete', 'helmchart', helmchart_name,
-            '-n', app_constants.HELM_RELEASE_NS,
-            '--ignore-not-found=true', '--timeout=30s',
-            '--request-timeout=30s'
-        ]
-        stdout, stderr = cutils.trycmd(*cmd)
-        LOG.debug(f"{app.name} app: deleted HelmChart {helmchart_name}: "
-                  f"stdout={stdout} stderr={stderr}")
+        for chart_name in [app_constants.HELM_APP_KUBEVIRT,
+                           app_constants.HELM_APP_CDI]:
+            helmchart_name = (f"{app_constants.HELM_RELEASE_NS}-"
+                              f"{chart_name}")
+            cmd = [
+                'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                'delete', 'helmchart', helmchart_name,
+                '-n', app_constants.HELM_RELEASE_NS,
+                '--ignore-not-found=true', '--timeout=30s',
+                '--request-timeout=30s'
+            ]
+            stdout, stderr = cutils.trycmd(*cmd)
+            LOG.debug(f"{app.name} app: deleted HelmChart {helmchart_name}: "
+                      f"stdout={stdout} stderr={stderr}")
 
         LOG.debug(f"{app.name} app: pre_remove comprehensive cleanup "
                   "completed")
@@ -644,16 +797,19 @@ class KubeVirtAppLifecycleOperator(base.AppLifecycleOperator):
         LOG.debug(f"Executing post_remove for {app_constants.HELM_APP_KUBEVIRT} app")
 
         # Delete Helm release secrets
-        cmd = [
-            'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
-            'delete', 'secret',
-            '-n', app_constants.HELM_RELEASE_NS,
-            '-l', f'name={app_constants.HELM_APP_KUBEVIRT},owner=helm',
-            '--ignore-not-found=true'
-        ]
-        stdout, stderr = cutils.trycmd(*cmd)
-        LOG.debug(f"{app_constants.HELM_APP_KUBEVIRT} app: deleted helm "
-                  f"secrets: stdout={stdout} stderr={stderr}")
+        for chart_name in [app_constants.HELM_APP_KUBEVIRT,
+                           app_constants.HELM_APP_CDI]:
+            cmd = [
+                'kubectl', '--kubeconfig', kubernetes.KUBERNETES_ADMIN_CONF,
+                'delete', 'secret',
+                '-n', app_constants.HELM_RELEASE_NS,
+                '-l', f'name={chart_name},owner=helm',
+                '--ignore-not-found=true'
+            ]
+            stdout, stderr = cutils.trycmd(*cmd)
+            LOG.debug(f"{app_constants.HELM_APP_KUBEVIRT} app: deleted helm "
+                      f"secrets for {chart_name}: stdout={stdout} "
+                      f"stderr={stderr}")
 
         # Remove virtctl sym link
         if os.path.exists(app_constants.HELM_VIRTCTL_LINK_PATH):

@@ -1,0 +1,139 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright (c) 2022-2026 Wind River Systems, Inc.
+#
+# Copyright 2017 The KubeVirt Authors
+#
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    helm.sh/resource-policy: keep
+  labels:
+    cdi.kubevirt.io: cdi-operator
+    name: cdi-operator
+    np.kubevirt.io/allow-access-cluster-services: "true"
+    operator.cdi.kubevirt.io: ""
+    prometheus.cdi.kubevirt.io: "true"
+  name: cdi-operator
+  namespace: cdi
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      name: cdi-operator
+      operator.cdi.kubevirt.io: ""
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        openshift.io/required-scc: restricted-v2
+      labels:
+        cdi.kubevirt.io: cdi-operator
+        name: cdi-operator
+        np.kubevirt.io/allow-access-cluster-services: "true"
+        operator.cdi.kubevirt.io: ""
+        prometheus.cdi.kubevirt.io: "true"
+    spec:
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: cdi.kubevirt.io
+                  operator: In
+                  values:
+                  - cdi-operator
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+      containers:
+      - env:
+        - name: DEPLOY_CLUSTER_RESOURCES
+          value: "true"
+        - name: OPERATOR_VERSION
+          value: v1.65.0
+        - name: CONTROLLER_IMAGE
+          value: {{ .Values.images.tags.cdiControllerImage }}
+        - name: IMPORTER_IMAGE
+          value: {{ .Values.images.tags.cdiImporterImage }}
+        - name: CLONER_IMAGE
+          value: {{ .Values.images.tags.cdiClonerImage }}
+        - name: OVIRT_POPULATOR_IMAGE
+          value: {{ .Values.images.tags.cdiImporterImage }}
+        - name: APISERVER_IMAGE
+          value: {{ .Values.images.tags.cdiApiServerImage }}
+        - name: UPLOAD_SERVER_IMAGE
+          value: {{ .Values.images.tags.cdiUploadServerImage }}
+        - name: UPLOAD_PROXY_IMAGE
+          value: {{ .Values.images.tags.cdiUploadProxyImage }}
+        - name: VERBOSITY
+          value: "1"
+        - name: PULL_POLICY
+          value: IfNotPresent
+        - name: MONITORING_NAMESPACE
+        image: {{ .Values.images.tags.cdiOperatorImage }}
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8444
+            scheme: HTTP
+          initialDelaySeconds: 5
+          timeoutSeconds: 10
+        name: cdi-operator
+        ports:
+        - containerPort: {{ .Values.containerPorts.metricsPort }}
+          name: metrics
+          protocol: TCP
+        - containerPort: 8444
+          name: health
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8444
+            scheme: HTTP
+          initialDelaySeconds: 5
+          timeoutSeconds: 10
+        resources:
+          requests:
+            memory: {{ .Values.resources.requests.memory }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: FallbackToLogsOnError
+      imagePullSecrets:
+      - name: {{ .Values.imagePullSecrets }}
+      nodeSelector:
+        kubernetes.io/os: linux
+        node-role.kubernetes.io/control-plane: ""
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: cdi-operator
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists

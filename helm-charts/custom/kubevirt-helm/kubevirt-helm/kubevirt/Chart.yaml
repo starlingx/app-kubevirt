@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright (c) 2026 Wind River Systems, Inc.
+#
+apiVersion: v2
+name: kubevirt-app
+type: application
+version: 1.8.2
+appVersion: CHART_KUBEVIRT_APP_VERSION
+description: KubeVirt control plane resources

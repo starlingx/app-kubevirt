@@ -1,0 +1,29 @@
+certificateRotate:
+  ca:
+    duration: 1440h
+    renewBefore: 720h
+  server:
+    duration: 1440h
+    renewBefore: 720h
+  client:
+    duration: 1440h
+    renewBefore: 720h
+componentType: platform
+containerPorts:
+  metricsPort: 8080
+featureGates:
+  - HonorWaitForFirstConsumer
+imagePullSecrets: default-registry-key
+images:
+  tags:
+    cdiApiServerImage: quay.io/kubevirt/cdi-apiserver:v1.65.0
+    cdiClonerImage: quay.io/kubevirt/cdi-cloner:v1.65.0
+    cdiControllerImage: quay.io/kubevirt/cdi-controller:v1.65.0
+    cdiImporterImage: quay.io/kubevirt/cdi-importer:v1.65.0
+    cdiOperatorImage: quay.io/kubevirt/cdi-operator:v1.65.0
+    cdiUploadProxyImage: quay.io/kubevirt/cdi-uploadproxy:v1.65.0
+    cdiUploadServerImage: quay.io/kubevirt/cdi-uploadserver:v1.65.0
+replicas: 1
+resources:
+  requests:
+    memory: 150Mi

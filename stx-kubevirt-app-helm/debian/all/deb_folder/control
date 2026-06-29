@@ -3,7 +3,8 @@ Section: libs
 Priority: optional
 Maintainer: StarlingX Developers <starlingx-discuss@lists.starlingx.io>
 Build-Depends: debhelper-compat (= 13),
- helm,
+ kubevirt-helm,
+ cdi-helm,
  python3-k8sapp-kubevirt,
  python3-k8sapp-kubevirt-wheels,
  build-info
@@ -15,4 +16,4 @@ Section: libs
 Architecture: any
 Depends: ${misc:Depends}
 Description: StarlingX KubeVirt App Charts
- This package contains helm charts for the KubeVirt application.
+ This package contains FluxCD manifests for the KubeVirt application.

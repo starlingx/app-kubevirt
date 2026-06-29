@@ -4,7 +4,6 @@
 #
 #
 # All Rights Reserved.
-#    - Auto Updated Contents 2026-06-04 15:56:18 -
 ARG BASE
 FROM ${BASE}
 ADD https://github.com/kubevirt/kubevirt/releases/download/v1.8.2/virtctl-v1.8.2-linux-amd64 .

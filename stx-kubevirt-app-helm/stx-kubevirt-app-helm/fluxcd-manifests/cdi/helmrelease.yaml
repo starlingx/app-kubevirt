@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright (c) 2026 Wind River Systems, Inc.
+#
+apiVersion: "helm.toolkit.fluxcd.io/v2"
+kind: HelmRelease
+metadata:
+  name: cdi
+  namespace: kube-system
+  labels:
+    chart_group: starlingx-kubevirt-charts
+spec:
+  releaseName: cdi
+  chart:
+    spec:
+      chart: cdi
+      version: REPLACE_HELM_CHART_VERSION
+      sourceRef:
+        kind: HelmRepository
+        name: stx-platform-kubevirt
+        namespace: kube-system
+  interval: 1m
+  timeout: 30m
+  test:
+    enable: false
+  install:
+    crds: CreateReplace
+    disableHooks: false
+  upgrade:
+    crds: CreateReplace
+    disableHooks: false
+  valuesFrom:
+    - kind: Secret
+      name: cdi-static-overrides
+      valuesKey: cdi-static-overrides.yaml
+    - kind: Secret
+      name: cdi-system-overrides
+      valuesKey: cdi-system-overrides.yaml

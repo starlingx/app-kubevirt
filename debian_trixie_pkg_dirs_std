@@ -1,2 +1,4 @@
+helm-charts/custom/kubevirt-helm
+helm-charts/custom/cdi-helm
 python3-k8sapp-kubevirt
 stx-kubevirt-app-helm

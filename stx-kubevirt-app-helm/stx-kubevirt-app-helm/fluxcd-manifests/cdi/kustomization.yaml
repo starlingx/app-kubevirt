@@ -1,0 +1,17 @@
+# Copyright (c) 2026 Wind River Systems, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+---
+namespace: kube-system
+resources:
+  - helmrelease.yaml
+secretGenerator:
+  - name: cdi-system-overrides
+    files:
+      - cdi-system-overrides.yaml
+  - name: cdi-static-overrides
+    files:
+      - cdi-static-overrides.yaml
+generatorOptions:
+  disableNameSuffixHash: true

@@ -1,0 +1,24 @@
+#!/usr/bin/make -f
+export DH_VERBOSE = 1
+
+export ROOT = debian/tmp
+export APP_FOLDER = $(ROOT)/usr/lib/helm
+
+export DEB_VERSION = $(shell dpkg-parsechangelog | egrep '^Version:' | cut -f 2 -d ' ')
+export PATCH_VERSION = $(shell echo $(DEB_VERSION) | cut -f 4 -d '.')
+export CHART_BASE_VERSION = $(shell echo $(DEB_VERSION) | cut -f 1 -d '-')
+export CHART_VERSION = $(CHART_BASE_VERSION).$(PATCH_VERSION)
+export CHART_APP_VERSION = 1.65.0
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	sed -i 's/CHART_CDI_APP_VERSION/$(CHART_APP_VERSION)/g' cdi/Chart.yaml
+	make CHART_VERSION=$(CHART_VERSION) CHART_APP_VERSION=$(CHART_APP_VERSION) cdi
+
+override_dh_auto_install:
+	install -d -m 755 $(APP_FOLDER)
+	install -p -D -m 755 cdi-*.tgz $(APP_FOLDER)
+
+override_dh_auto_test:

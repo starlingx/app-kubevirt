@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Copyright (c) 2026 Wind River Systems, Inc.
+#
+apiVersion: v2
+name: cdi
+type: application
+version: 1.65.0
+appVersion: CHART_CDI_APP_VERSION
+description: Containerized Data Importer resources for KubeVirt

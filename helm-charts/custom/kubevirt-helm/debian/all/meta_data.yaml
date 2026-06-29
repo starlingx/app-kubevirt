@@ -1,0 +1,9 @@
+---
+debname: kubevirt-helm
+debver: 1.0-1
+src_path: kubevirt-helm
+revision:
+  dist: $STX_DIST
+  GITREVCOUNT:
+    SRC_DIR: ${MY_REPO}/stx/app-kubevirt/helm-charts/custom/kubevirt-helm/kubevirt-helm
+    BASE_SRCREV: e894f8c4fefb3b387e4d26e885c026ea2c3a1524
