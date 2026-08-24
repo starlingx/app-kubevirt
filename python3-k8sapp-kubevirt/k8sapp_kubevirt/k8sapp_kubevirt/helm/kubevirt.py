@@ -46,7 +46,6 @@ class KubeVirtHelm(base.FluxCDBaseHelm):
         :return: Application overrides.
         """
         overrides = {
-            app_constants.HELM_RELEASE_NS: {},
             app_constants.HELM_CHART_KUBEVIRT: {
                 'featureGates': ['Snapshot'],
                 'useEmulation': utils.is_virtual(),
@@ -68,6 +67,8 @@ class KubeVirtHelm(base.FluxCDBaseHelm):
         }
 
         if namespace:
+            if namespace == app_constants.HELM_RELEASE_NS:
+                return {}
             if namespace in self.SUPPORTED_NAMESPACES:
                 return overrides[namespace]
             raise exception.InvalidHelmNamespace(chart=self.CHART, namespace=namespace)

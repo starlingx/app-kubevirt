@@ -21,6 +21,10 @@ class TestKubeVirtHelmOverrides(HelmOverrideTestBase):
     """Tests for KubeVirtHelm get_overrides method."""
 
     CHART_NAMESPACE = app_constants.HELM_CHART_KUBEVIRT
+    VALUES_YAML_PATH = (
+        'helm-charts/custom/kubevirt-helm/'
+        'kubevirt-helm/kubevirt/values.yaml'
+    )
 
     def setUp(self):
         """Set up test helm instance with patches."""
@@ -93,3 +97,11 @@ class TestKubeVirtHelmOverrides(HelmOverrideTestBase):
     def test_overrides_multi_controller_replicas(self):
         """Verify replicas is 2 for multi controller."""
         self._test_replicas_multi_controller()
+
+    def test_no_namespace_has_single_chart_key(self):
+        """Verify single namespace key in overrides."""
+        self._test_no_namespace_has_single_chart_key()
+
+    def test_override_keys_match_values_yaml(self):
+        """Verify override keys exist in values.yaml."""
+        self._test_override_keys_match_values_yaml()

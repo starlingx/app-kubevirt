@@ -46,7 +46,6 @@ class CdiHelm(base.FluxCDBaseHelm):
         :return: Application overrides.
         """
         overrides = {
-            app_constants.HELM_RELEASE_NS: {},
             app_constants.HELM_NS_CDI: {
                 'featureGates': ['HonorWaitForFirstConsumer'],
                 app_constants.HELM_CHART_COMPONENT_LABEL:
@@ -70,9 +69,12 @@ class CdiHelm(base.FluxCDBaseHelm):
             }
         }
 
+        if not namespace:
+            return overrides
+
+        if namespace == app_constants.HELM_RELEASE_NS:
+            return {}
         if namespace in self.SUPPORTED_NAMESPACES:
             return overrides[namespace]
-        if namespace:
-            raise exception.InvalidHelmNamespace(chart=self.CHART,
-                                                 namespace=namespace)
-        return overrides
+        raise exception.InvalidHelmNamespace(chart=self.CHART,
+                                             namespace=namespace)
