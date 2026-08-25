@@ -105,3 +105,19 @@ class TestKubeVirtHelmOverrides(HelmOverrideTestBase):
     def test_override_keys_match_values_yaml(self):
         """Verify override keys exist in values.yaml."""
         self._test_override_keys_match_values_yaml()
+
+    def test_cert_constants_match_values_yaml(self):
+        """Verify cert rotation constants match values.yaml."""
+        self._test_cert_constants_match_values_yaml({
+            ('ca', 'duration'):
+                app_constants.KUBEVIRT_CERTIFICATE_ROTATE_CA_DURATION,
+            ('ca', 'renewBefore'):
+                app_constants
+                .KUBEVIRT_CERTIFICATE_ROTATE_CA_RENEW_BEFORE,
+            ('server', 'duration'):
+                app_constants
+                .KUBEVIRT_CERTIFICATE_ROTATE_SERVER_DURATION,
+            ('server', 'renewBefore'):
+                app_constants
+                .KUBEVIRT_CERTIFICATE_ROTATE_SERVER_RENEW_BEFORE,
+        })

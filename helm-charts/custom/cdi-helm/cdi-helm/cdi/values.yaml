@@ -1,13 +1,13 @@
 certificateRotate:
   ca:
-    duration: 1440h
-    renewBefore: 720h
+    duration: 8760h
+    renewBefore: 4380h
   server:
     duration: 1440h
-    renewBefore: 720h
+    renewBefore: 840h
   client:
     duration: 1440h
-    renewBefore: 720h
+    renewBefore: 840h
 componentType: platform
 containerPorts:
   metricsPort: 8080

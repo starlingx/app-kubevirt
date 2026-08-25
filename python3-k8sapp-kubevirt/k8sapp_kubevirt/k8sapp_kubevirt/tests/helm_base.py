@@ -131,3 +131,73 @@ class HelmOverrideTestBase(unittest.TestCase):
             if key == app_constants.HELM_CHART_COMPONENT_LABEL:
                 continue
             self.assertIn(key, values_keys)
+
+    @staticmethod
+    def _parse_hours(value):
+        """Parse duration string like '8760h' to hours."""
+        return int(value.rstrip('h'))
+
+    def _test_ca_and_leaf_different_refresh(self):
+        """Verify CA and leaf cert rotation schedules differ."""
+        ca_refresh = (
+            self._parse_hours(
+                app_constants.CDI_CERTIFICATE_ROTATE_CA_DURATION)
+            - self._parse_hours(
+                app_constants.CDI_CERTIFICATE_ROTATE_CA_RENEW_BEFORE)
+        )
+        leaf_refresh = (
+            self._parse_hours(
+                app_constants.CDI_CERTIFICATE_ROTATE_SERVER_DURATION)
+            - self._parse_hours(
+                app_constants
+                .CDI_CERTIFICATE_ROTATE_SERVER_RENEW_BEFORE)
+        )
+        self.assertNotEqual(ca_refresh, leaf_refresh)
+
+    def _test_ca_age_exceeds_propagation_guard(self):
+        """Verify CA is old enough to sign leaf after rotation."""
+        ca_refresh = (
+            self._parse_hours(
+                app_constants.CDI_CERTIFICATE_ROTATE_CA_DURATION)
+            - self._parse_hours(
+                app_constants.CDI_CERTIFICATE_ROTATE_CA_RENEW_BEFORE)
+        )
+        leaf_refresh = (
+            self._parse_hours(
+                app_constants.CDI_CERTIFICATE_ROTATE_SERVER_DURATION)
+            - self._parse_hours(
+                app_constants
+                .CDI_CERTIFICATE_ROTATE_SERVER_RENEW_BEFORE)
+        )
+        propagation_guard = leaf_refresh / 10
+
+        if ca_refresh % leaf_refresh == 0:
+            ca_age = 0
+        else:
+            leaf_cycles = (ca_refresh // leaf_refresh) + 1
+            next_leaf = leaf_cycles * leaf_refresh
+            ca_age = next_leaf - ca_refresh
+
+        self.assertGreater(ca_age, propagation_guard)
+
+    def _test_cert_constants_match_values_yaml(self, expected):
+        """Verify cert constants match values.yaml.
+
+        expected -- dict mapping values.yaml paths to constants
+        e.g. {('ca', 'duration'): '8760h', ...}
+        """
+        values_path = os.path.join(
+            REPO_ROOT, self.VALUES_YAML_PATH
+        )
+        with open(values_path, 'r',
+                  encoding='utf-8') as values_file:
+            values = yaml.safe_load(values_file)
+
+        cert_rotate = values['certificateRotate']
+        for (section, key), constant_value in expected.items():
+            self.assertEqual(
+                cert_rotate[section][key],
+                constant_value,
+                f"values.yaml {section}.{key} does not match "
+                f"constants.py"
+            )

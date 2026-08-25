@@ -76,3 +76,28 @@ class TestCdiHelmOverrides(HelmOverrideTestBase):
     def test_override_keys_match_values_yaml(self):
         """Verify override keys exist in values.yaml."""
         self._test_override_keys_match_values_yaml()
+
+    def test_ca_and_leaf_different_refresh(self):
+        """Verify CA and leaf cert rotation schedules differ."""
+        self._test_ca_and_leaf_different_refresh()
+
+    def test_ca_age_exceeds_propagation_guard(self):
+        """Verify CA is old enough to sign leaf after rotation."""
+        self._test_ca_age_exceeds_propagation_guard()
+
+    def test_cert_constants_match_values_yaml(self):
+        """Verify cert rotation constants match values.yaml."""
+        self._test_cert_constants_match_values_yaml({
+            ('ca', 'duration'):
+                app_constants.CDI_CERTIFICATE_ROTATE_CA_DURATION,
+            ('ca', 'renewBefore'):
+                app_constants.CDI_CERTIFICATE_ROTATE_CA_RENEW_BEFORE,
+            ('server', 'duration'):
+                app_constants.CDI_CERTIFICATE_ROTATE_SERVER_DURATION,
+            ('server', 'renewBefore'):
+                app_constants.CDI_CERTIFICATE_ROTATE_SERVER_RENEW_BEFORE,
+            ('client', 'duration'):
+                app_constants.CDI_CERTIFICATE_ROTATE_CLIENT_DURATION,
+            ('client', 'renewBefore'):
+                app_constants.CDI_CERTIFICATE_ROTATE_CLIENT_RENEW_BEFORE,
+        })
